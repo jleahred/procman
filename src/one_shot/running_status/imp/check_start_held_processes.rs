@@ -1,8 +1,8 @@
 use chrono::Local;
-use std::sync::mpsc;
 use std::thread;
 use std::time::Duration;
 use std::{process::Command, time};
+// use std::sync::mpsc;
 
 use super::super::{ProcessStatus, RunningStatus};
 
@@ -70,37 +70,71 @@ pub(crate) fn check_start_held_processes(mut rs: RunningStatus) -> RunningStatus
     rs
 }
 
+// fn run_command_with_timeout(command: &str, timeout: time::Duration) -> Result<(), String> {
+//     let timeout = if timeout > time::Duration::from_secs(2) {
+//         eprintln!(
+//             "Timeout is too big ({}), setting to 2 seconds",
+//             timeout.as_secs()
+//         );
+//         time::Duration::from_secs(2)
+//     } else {
+//         timeout
+//     };
+
+//     let (sender, receiver) = mpsc::channel();
+
+//     let command = command.to_string();
+
+//     thread::spawn(move || {
+//         let output = Command::new("sh").arg("-c").arg(command).output();
+
+//         let _ = sender.send(output);
+//     });
+
+//     let rec = receiver.recv_timeout(timeout);
+//     match rec {
+//         Ok(Ok(output)) => {
+//             if output.status.success() {
+//                 Ok(())
+//             } else {
+//                 Err(format!("Command failed with status: {}", output.status))
+//             }
+//         }
+//         Ok(Err(e)) => Err(format!("Command execution failed: {}", e)),
+//         Err(_) => Err("Command timed out".to_string()),
+//     }
+// }
+
 fn run_command_with_timeout(command: &str, timeout: time::Duration) -> Result<(), String> {
-    let timeout = if timeout > time::Duration::from_secs(2) {
-        eprintln!(
-            "Timeout is too big ({}), setting to 2 seconds",
-            timeout.as_secs()
-        );
-        time::Duration::from_secs(2)
-    } else {
-        timeout
-    };
-
-    let (sender, receiver) = mpsc::channel();
-
     let command = command.to_string();
+    let mut child = Command::new("sh")
+        .arg("-c")
+        .arg(command)
+        .spawn()
+        .map_err(|e| format!("Failed to spawn command: {}", e))?;
 
-    thread::spawn(move || {
-        let output = Command::new("sh").arg("-c").arg(command).output();
+    // let pid = child.id();
 
-        let _ = sender.send(output);
-    });
-
-    let rec = receiver.recv_timeout(timeout);
-    match rec {
-        Ok(Ok(output)) => {
-            if output.status.success() {
-                Ok(())
-            } else {
-                Err(format!("Command failed with status: {}", output.status))
+    let start = time::Instant::now();
+    while start.elapsed() < timeout {
+        match child.try_wait() {
+            Ok(Some(status)) => {
+                return if status.success() {
+                    Ok(())
+                } else {
+                    Err(format!("Command failed with status: {}", status))
+                };
             }
+            Ok(None) => {
+                thread::sleep(time::Duration::from_millis(50));
+                continue;
+            }
+            Err(e) => return Err(format!("Error checking child process: {}", e)),
         }
-        Ok(Err(e)) => Err(format!("Command execution failed: {}", e)),
-        Err(_) => Err("Command timed out".to_string()),
     }
+
+    // Timeout: kill the process
+    let _ = child.kill();
+    let _ = child.wait(); // Important to avoid zombie processes
+    Err("Command timed out".to_string())
 }

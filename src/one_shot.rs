@@ -6,11 +6,11 @@ use crate::types::config::Config;
 
 const RUNNING_STATUS_FOLDER: &str = "/tmp/procman";
 
-pub(crate) fn one_shot2() {
+pub(crate) fn one_shot2(full_file_name: &str) {
     println!("\n--------------------------------------------------------------------------------");
     println!("Checking... {}\n", chrono::Local::now());
 
-    let config: Config = read_config_file_or_panic("processes.toml");
+    let config: Config = read_config_file_or_panic(full_file_name);
     let running_status = running_status::load_running_status(RUNNING_STATUS_FOLDER, &config.uid);
     let active_procs_by_config = config.get_active_procs_by_config();
     let running_ids = running_status.get_running_ids();

@@ -3,22 +3,24 @@
 
 ## TODO
 
-* commands
 * check config
     * depends exists
     * circular references
-* command stop
+* cli 
+    * commands
+        * stop
+        * ...
+    * allow specifying a configuration file, logs, tui...
 * StartHealthCheck, it too many retrys, reset the service
+* add external_depend_cmd
 * command parameters
     * debug
     * ...
-* add type oneshot/fake
+* add process type oneshot
 * tui
 * groups
 * detect zombie processes
 * run-once
-* startup parameters
-    * allow specifying a configuration file, logs, tui...
 * execution retries
     * specify frequency and possibly the number of attempts
 
@@ -77,7 +79,7 @@ command = "curl -I http://localhost:8080"
 timeout = { secs = 30, nanos = 0 }        # optional
 ```
 
-### Example of a process configuration 1
+### Example of a process configuration 2
 
 ```toml
 [[process]]
@@ -184,7 +186,8 @@ stateDiagram-v2
 ## Check start health
 
 
-If you configure start_health_check for a command, the system will not mark the process as running until the command completes successfully.
+If you configure start_health_check command, the system will not mark the process as running until the command completes successfully.
+
 ```toml
 [process.start_health_check] 
 command = "curl -I http://localhost:8080"
