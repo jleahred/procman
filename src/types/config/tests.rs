@@ -17,7 +17,7 @@ mod tests {
             [[process]]
             id = "PRUEBA_C"
             command = "echo $(date)  '  bb'"
-            apply_on = "2029-11-01T12:20:00"
+            apply_on = "2024-11-01T12:20:00"
 
             [[process]]
             id = "example_process"

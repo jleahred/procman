@@ -46,7 +46,7 @@ apply_on = "2029-11-01T12:20:00"
 [[process]]
 id = "DEPENDS_ON_A"
 command = "while true; do echo $(date)  '  depends on a'; sleep 1; done"
-apply_on = "2024-10-01T12:20:00"
+apply_on = "2029-10-01T12:20:00"
 depends_on = ["TEST_A"]
 
 [[process]]
@@ -63,24 +63,24 @@ apply_on = "2026-10-01T12:20:00"
 [[process]]
 id = "A"
 command = "ls -la && sleep infinity"
-apply_on = "2050-01-01T00:00:00"
+apply_on = "2029-01-01T00:00:00"
 
 [[process]]
 id = "B"
 command = "ls -la && sleep infinity"
-apply_on = "2050-01-01T00:00:00"
+apply_on = "2029-01-01T00:00:00"
 
 [[process]]
 id = "C"
 command = "ls -la && sleep infinity"
-apply_on = "2050-01-01T00:00:00"
+apply_on = "2029-01-01T00:00:00"
 
 [[process]]
 id = "D"
 command = "ls -la  && sleep infinity"
-apply_on = "2050-01-01T00:00:00"
+apply_on = "2029-01-01T00:00:00"
 
 [[process]]
 id = "F"
 command = "ls -la "
-apply_on = "2050-01-01T00:00:00"
+apply_on = "2029-01-01T00:00:00"

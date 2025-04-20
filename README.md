@@ -6,14 +6,14 @@
 * check config
     * depends exists
     * circular references
+* add external_depend_cmd
 * cli 
     * commands
         * stop
         * ...
-    * allow specifying a configuration file, logs, tui...
+* logs
 * StartHealthCheck, it too many retrys, reset the service
-* add external_depend_cmd
-* command parameters
+* commands arguments
     * debug
     * ...
 * add process type oneshot
@@ -159,7 +159,7 @@ The process `DEPENDS_ON_A` will not run until the process `TEST_A` is in the run
 [[process]]
 id = "TEST_A"
 command = "while true; do echo $(date)  '  test a'; sleep 1; done"
-apply_on = "2029-11-01T12:20:00"
+apply_on = "2024-11-01T12:20:00"
 
 [[process]]
 id = "DEPENDS_ON_A"

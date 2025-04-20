@@ -2,6 +2,7 @@ mod one_shot;
 mod read_config_file;
 mod types;
 mod cli_params;
+mod tui;//  experimental
 
 use std::env;
 use std::process::Command;
@@ -27,13 +28,18 @@ fn main() {
             println!("Running: {}", processes_filename);
             run_in_loop(&processes_filename);
         }
-        cli_params::Commands::Check { filename } => {
-            println!("Checking: {}", filename);
-            let _ = read_config_file::read_config_file_or_panic(&filename);
+        cli_params::Commands::Check { processes_filename } => {
+            println!("Checking: {}", processes_filename);
+            let _ = read_config_file::read_config_file_or_panic(&processes_filename);
         }
         cli_params::Commands::Uid => {
             println!("uid you can use on processes config file:   {}", uuid::Uuid::new_v4().to_string());
             return;
+            }
+            cli_params::Commands::Tui { processes_filename } => {
+                println!("TUI");
+                let config = read_config_file::read_config_file_or_panic(&processes_filename);
+                tui::run(&config.uid.0).unwrap();
             }
     }
 

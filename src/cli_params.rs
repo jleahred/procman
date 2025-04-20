@@ -19,9 +19,12 @@ pub(crate) enum Commands {
     /// check the given processes configuration file
     Check {
         /// configuration file to use. toml format with info about the processes to run
-        filename: String,
+        processes_filename: String,
     },
     /// Generate a UID to be used in the config file
+    Tui {
+        processes_filename: String,
+    },
     Uid,
 }
 
