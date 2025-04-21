@@ -13,10 +13,10 @@ pub(crate) fn load_running_status(file_path: &str, file_uid: &ConfigUid) -> Runn
         toml::from_str(&content)
             .unwrap_or_else(|err| panic!("Failed to parse TOML from file {}: {}", full_path, err))
     } else {
-        println!(
-            "File {} does not exist. Returning default RunningStatus.",
-            full_path
-        );
+        // println!(
+        //     "File {} does not exist. Returning default RunningStatus.",
+        //     full_path
+        // );
         RunningStatus {
             file_uid: file_uid.clone(),
             _file_format: String::from("0"),

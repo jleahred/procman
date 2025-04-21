@@ -24,7 +24,7 @@ use crate::{
     types::config::{Config, ProcessConfig, ProcessId},
 };
 
-pub(crate) fn run() -> Result<(), Box<dyn std::error::Error>> {
+pub(crate) fn run(run_status_filename: &str) -> Result<(), Box<dyn std::error::Error>> {
     // configure
     let stdout = io::stdout();
     let backend = CrosstermBackend::new(stdout);
@@ -37,7 +37,7 @@ pub(crate) fn run() -> Result<(), Box<dyn std::error::Error>> {
         use std::time::Duration;
 
         loop {
-            let processes = get_process_info();
+            let processes = get_process_info(&run_status_filename);
 
             terminal.draw(|f| {
                 let chunks = Layout::default()
@@ -109,7 +109,7 @@ fn render_rows(info: &BTreeMap<ProcessId, MergedProcessInfo>) -> Vec<Row> {
         .collect()
 }
 
-fn render_row<'a>(proc_id: &ProcessId, merged_info: &MergedProcessInfo) -> Row<'a> {
+fn render_row<'a>(_proc_id: &ProcessId, merged_info: &MergedProcessInfo) -> Row<'a> {
     Row::new(vec![
         Cell::from(merged_info.process_id.0.clone()),
         Cell::from(render_status(merged_info)),
@@ -121,6 +121,12 @@ fn render_status<'a>(merged_info: &MergedProcessInfo) -> Cell<'a> {
     let (st_color, st_text) = match merged_info.running {
         Some(ref running) => match running.status {
             crate::types::running_status::ProcessStatus::Running { .. } => {
+                if merged_info.config_active.is_none() {
+                    return Cell::from(Span::styled(
+                        "running",
+                        Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+                    ));
+                }
                 (Color::Green, "running")
             }
             crate::types::running_status::ProcessStatus::Ready2Start { .. } => {
@@ -163,9 +169,16 @@ fn render_command<'a>(merged_info: &MergedProcessInfo) -> Cell<'a> {
             ));
         }
         None => {
+            if merged_info.in_config {
+                return Cell::from(Span::styled(
+                    "not activated",
+                    Style::default().fg(Color::Yellow),
+                ));
+            } else {
+            }
             return Cell::from(Span::styled(
-                "not actived",
-                Style::default().fg(Color::Yellow),
+                "not in config",
+                Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
             ));
         }
     }
@@ -173,12 +186,13 @@ fn render_command<'a>(merged_info: &MergedProcessInfo) -> Cell<'a> {
 
 struct MergedProcessInfo {
     process_id: ProcessId,
+    in_config: bool,
     config_active: Option<crate::types::config::ProcessConfig>,
     running: Option<crate::types::running_status::ProcessWatched>,
 }
 
-fn get_process_info() -> BTreeMap<ProcessId, MergedProcessInfo> {
-    let cfg = read_config_file::read_config_file_or_panic("processes.toml"); //  todo:0
+fn get_process_info(run_status_filename: &str) -> BTreeMap<ProcessId, MergedProcessInfo> {
+    let cfg = read_config_file::read_config_file_or_panic(&run_status_filename); //  todo:0
     let running_status =
         crate::types::running_status::load_running_status("/tmp/procman/", &cfg.uid);
     get_process_info_merged(&cfg, &running_status.processes)
@@ -196,12 +210,24 @@ fn get_process_info_merged(
                 process.id.clone(),
                 MergedProcessInfo {
                     process_id: process.id.clone(),
+                    in_config: true,
                     config_active: None,
                     running: None,
                 },
             )
         })
         .collect();
+
+    for (proc_id, process_watched) in running_status {
+        result
+            .entry(proc_id.clone())
+            .or_insert_with(|| MergedProcessInfo {
+                process_id: proc_id.clone(),
+                in_config: false,
+                config_active: None,
+                running: Some(process_watched.clone()),
+            });
+    }
 
     let map_proc_id_active_cfg: BTreeMap<ProcessId, ProcessConfig> = config
         .get_active_procs_by_config()

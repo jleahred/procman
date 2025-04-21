@@ -22,12 +22,14 @@ fn main() {
     match cli_params.command {
         cli_params::Commands::Run { processes_filename } => {
             let config = read_config_file::read_config_file_or_panic(&processes_filename);
-            let _locked = check_run_once::check(&format!("{}.lock", config.uid.0)).unwrap_or_else(|err| {
+            let locked = check_run_once::check(&format!("{}.lock", config.uid.0)).unwrap_or_else(|err| {
                 eprintln!("CRITIC: {}", err);
                 std::process::exit(1);
             });
             println!("Running: {}", processes_filename);
             run_in_loop(&processes_filename);
+
+            check_run_once::remove_lock_file(&locked, &processes_filename); //  higienic, not critic
         }
         cli_params::Commands::Check { processes_filename } => {
             println!("Checking: {}", processes_filename);
@@ -41,7 +43,7 @@ fn main() {
             cli_params::Commands::Tui { processes_filename } => {
                 println!("TUI");
                 // let config = read_config_file::read_config_file_or_panic(&processes_filename);
-                tui::run().unwrap();
+                tui::run(&processes_filename).unwrap();
             }
     }
 

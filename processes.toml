@@ -63,12 +63,12 @@ apply_on = "2029-10-01T12:20:00"
 [[process]]
 id = "A"
 command = "ls -la && sleep infinity"
-apply_on = "2024-01-01T00:00:00"
+apply_on = "2029-01-01T00:00:00"
 
 [[process]]
 id = "B"
 command = "ls -la && sleep infinity"
-apply_on = "2029-01-01T00:00:00"
+apply_on = "2025-01-01T00:00:00"
 
 [[process]]
 id = "C"

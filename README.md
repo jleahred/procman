@@ -3,7 +3,11 @@
 
 ## TODO
 
+* eliminar los println! y eprintln! centralizar
 * tui
+    * detect if managing/monitoring is stopped
+    * show full config for process
+    * show depen_on and depend_from processes and navigate to them
 * ajustar el tiempo de chequeo
 * revisar la visiblidad de módulos pub(crate) pub(super)
 * groups
@@ -203,3 +207,20 @@ timeout = { secs = 2, nanos = 0 }        # optional
 Work in progress
 
 ![tui](tui.png)
+
+The interface is independent from process management and supervision.
+
+The TUI will contrast the information from the configuration file with the information about the running processes.
+
+It will display the status, highlighting differences in red in the Status column.
+
+The TUI can be launched without procman actively monitoring or supervising the processes, what probably will produce inconsistencies
+
+Here an example
+
+![tui2](tui2.png)
+
+As you can see, there are processes in an error state (red color). Some are running when they shouldn’t be, while others are not running despite being expected to be active.
+
+These inconsistencies are detected by comparing the actual state of the processes with the expected by configuration, and are highlighted in the interface.
+
