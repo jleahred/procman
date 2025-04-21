@@ -139,11 +139,14 @@ fn render_status<'a>(merged_info: &MergedProcessInfo) -> Cell<'a> {
         None => {
             if merged_info.config_active.is_none() {
                 return Cell::from(Span::styled(
-                    "not actived",
+                    "not running",
                     Style::default().fg(Color::Yellow),
                 ));
             } else {
-                (Color::Red, "not running")
+                return Cell::from(Span::styled(
+                    "not running",
+                    Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+                ));
             }
         }
     };

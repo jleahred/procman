@@ -108,7 +108,7 @@ pub(super) fn get_active_procs_by_config(config: &Config) -> Vec<ProcessConfig> 
         match process.process_type {
             ProcessType::Normal => {}
             ProcessType::Fake => {
-                println!("[{}] Process type is fake, skipping...", process.id.0);
+                // println!("[{}] Process type is fake, skipping...", process.id.0);
                 continue;
             }
         }

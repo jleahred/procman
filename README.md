@@ -198,3 +198,8 @@ command = "curl -I http://localhost:8080"
 timeout = { secs = 2, nanos = 0 }        # optional
 ```
 
+## TUI
+
+Work in progress
+
+![tui](tui.png)
