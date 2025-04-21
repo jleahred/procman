@@ -1,5 +1,5 @@
-use crate::one_shot::running_status::{ProcessStatus, ProcessWatched, RunningStatus};
 use crate::types::config::ProcessConfig;
+use crate::types::running_status::{ProcessStatus, ProcessWatched, RunningStatus};
 
 pub(crate) fn ready2start_from_missing_watched(
     mut running_status: RunningStatus,

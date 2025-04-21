@@ -1,8 +1,8 @@
 mod imp;
-mod running_status;
 
 use crate::read_config_file::read_config_file_or_panic;
 use crate::types::config::Config;
+use crate::types::running_status;
 
 const RUNNING_STATUS_FOLDER: &str = "/tmp/procman";
 

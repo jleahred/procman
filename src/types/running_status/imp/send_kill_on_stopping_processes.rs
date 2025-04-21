@@ -1,5 +1,4 @@
-use super::super::RunningStatus;
-use crate::one_shot::running_status::{ProcessStatus, ProcessWatched};
+use crate::types::running_status::{ProcessStatus, ProcessWatched, RunningStatus};
 
 pub(crate) fn send_kill_on_stopping_processes(mut st: RunningStatus) -> RunningStatus {
     for proc_watched in st.processes.values_mut() {
