@@ -5,6 +5,21 @@ use serde::de::{Deserializer, SeqAccess, Visitor};
 use serde::Deserialize;
 use std::fmt;
 
+pub(super) fn check(cfg: &Config) -> Result<(), String> {
+    if cfg.uid.0.is_empty() {
+        return Err("UID cannot be empty".to_string());
+    }
+    if cfg.process.is_empty() {
+        return Err("Process list cannot be empty".to_string());
+    }
+    for process in &cfg.process {
+        process.check_config()?;
+    }
+    depends_exists(cfg)?;
+    circular_refs(cfg)?;
+    Ok(())
+}
+
 pub(super) fn is_valid_start_stop(proc_conf: &ProcessConfig) -> Result<(), String> {
     if let Some(schedule) = &proc_conf.schedule {
         if schedule.start_time < schedule.stop_time {
@@ -68,7 +83,7 @@ pub(super) fn matches(ds: &DaySelection, weekday: chrono::Weekday) -> bool {
     }
 }
 
-pub(crate) fn get_active_procs_by_config(config: &Config) -> Vec<ProcessConfig> {
+pub(super) fn get_active_procs_by_config(config: &Config) -> Vec<ProcessConfig> {
     let now = Local::now().naive_local();
     let mut process_map: HashMap<ProcessId, ProcessConfig> = HashMap::new();
 
@@ -109,4 +124,68 @@ pub(crate) fn get_active_procs_by_config(config: &Config) -> Vec<ProcessConfig> 
     }
 
     process_map.values().cloned().collect()
+}
+
+//  --------------------
+fn depends_exists(cfg: &Config) -> Result<(), String> {
+    let process_ids: std::collections::HashSet<_> = cfg.process.iter().map(|p| &p.id).collect();
+
+    for process in &cfg.process {
+        for dependency in &process.depends_on {
+            if !process_ids.contains(&dependency) {
+                return Err(format!(
+                    "Process '{}' depends on non-existent process '{}'",
+                    process.id.0, dependency.0
+                ));
+            }
+        }
+    }
+
+    Ok(())
+}
+
+fn circular_refs(cfg: &Config) -> Result<(), String> {
+    fn has_cycle(
+        process_id: &ProcessId,
+        visited: &mut std::collections::HashSet<ProcessId>,
+        stack: &mut std::collections::HashSet<ProcessId>,
+        processes: &std::collections::HashMap<ProcessId, &ProcessConfig>,
+    ) -> bool {
+        if !visited.contains(process_id) {
+            visited.insert(process_id.clone());
+            stack.insert(process_id.clone());
+
+            if let Some(process) = processes.get(process_id) {
+                for dependency in &process.depends_on {
+                    if !visited.contains(dependency)
+                        && has_cycle(dependency, visited, stack, processes)
+                    {
+                        return true;
+                    } else if stack.contains(dependency) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        stack.remove(process_id);
+        false
+    }
+
+    let processes: std::collections::HashMap<_, _> =
+        cfg.process.iter().map(|p| (p.id.clone(), p)).collect();
+
+    let mut visited = std::collections::HashSet::new();
+    let mut stack = std::collections::HashSet::new();
+
+    for process in &cfg.process {
+        if has_cycle(&process.id, &mut visited, &mut stack, &processes) {
+            return Err(format!(
+                "Circular dependency detected involving process '{}'",
+                process.id.0
+            ));
+        }
+    }
+
+    Ok(())
 }

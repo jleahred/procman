@@ -24,8 +24,8 @@ pub(crate) fn run(processes_uid: &str) -> Result<(), Box<dyn std::error::Error>>
         use std::time::{Duration, Instant};
 
         loop {
+            let binding = get_process_info(processes_uid);
             terminal.draw(|f| {
-                let binding = get_process_info(processes_uid);
                 let rows: Vec<Row> = binding
                     .iter()
                     .map(|(id, status, command)| {

@@ -3,9 +3,10 @@
 
 ## TODO
 
-* check config
-    * depends exists
-    * circular references
+* tui
+* revisar la visiblidad de módulos pub(crate) pub(super)
+* groups
+* check lockfile exits and is mine
 * add external_depend_cmd
 * cli 
     * commands
@@ -17,8 +18,6 @@
     * debug
     * ...
 * add process type oneshot
-* tui
-* groups
 * detect zombie processes
 * run-once
 * execution retries
@@ -167,6 +166,10 @@ command = "while true; do echo $(date)  '  depends on a'; sleep 1; done"
 apply_on = "2024-10-01T12:20:00"
 depends_on = ["TEST_A"]
 ```
+
+Circular references (and self references a a specific case) will be detected on check
+
+Also it will check horphan references
 
 
 ## Watched ProcessStatus

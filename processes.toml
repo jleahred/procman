@@ -5,7 +5,7 @@ file_format = "0"
 [[process]]
 id = "example_process"
 command = "echo 'Hello, World!' && sleep 10"
-apply_on = "2029-10-01T12:00:00"
+apply_on = "2024-10-01T12:00:00"
 type = "normal"                              # optional  normal/fake
 
 [process.schedule]
@@ -17,15 +17,15 @@ week_days = ["mon", "wed", "thu", "sun"] # optional
 
 [process.start_health_check] # optional
 command = "curl -I http://localhost:8080"
-timeout = { secs = 30, nanos = 0 }        # optional
+timeout = { secs = 3, nanos = 0 }         # optional
 
 # -----------------------------------------
 
 [[process]]
 id = "example_process 2"
 command = "echo 'Starting process...'"
-apply_on = "2029-10-01T12:00:00"
-start_health_check = { command = "curl -I http://localhost:8080", timeout = { secs = 30, nanos = 0 } }
+apply_on = "2024-10-01T12:00:00"
+start_health_check = { command = "curl -I http://localhost:8080", timeout = { secs = 3, nanos = 0 } }
 schedule = { start_time = "08:00:00", stop_time = "18:00:00", week_days = [
     "mon",
     "tue",
@@ -41,18 +41,18 @@ depends_on = ["example_process"]
 [[process]]
 id = "TEST_A"
 command = "while true; do echo $(date)  '  test a'; sleep 1; done"
-apply_on = "2029-11-01T12:20:00"
+apply_on = "2024-11-01T12:20:00"
 
 [[process]]
 id = "DEPENDS_ON_A"
 command = "while true; do echo $(date)  '  depends on a'; sleep 1; done"
-apply_on = "2029-10-01T12:20:00"
+apply_on = "2024-10-01T12:20:00"
 depends_on = ["TEST_A"]
 
 [[process]]
 id = "PRUEBA_C"
 command = "echo $(date)  '  bb'; sleep 1; echo $(date)  '  bb'; sleep 1; echo $(date)  '  bb'; sleep 1"
-apply_on = "2029-11-01T12:20:00"
+apply_on = "2024-11-01T12:20:00"
 
 
 [[process]]
@@ -63,24 +63,38 @@ apply_on = "2026-10-01T12:20:00"
 [[process]]
 id = "A"
 command = "ls -la && sleep infinity"
-apply_on = "2029-01-01T00:00:00"
+apply_on = "2024-01-01T00:00:00"
 
 [[process]]
 id = "B"
 command = "ls -la && sleep infinity"
-apply_on = "2029-01-01T00:00:00"
+apply_on = "2024-01-01T00:00:00"
 
 [[process]]
 id = "C"
 command = "ls -la && sleep infinity"
-apply_on = "2029-01-01T00:00:00"
+apply_on = "2024-01-01T00:00:00"
 
 [[process]]
 id = "D"
 command = "ls -la  && sleep infinity"
-apply_on = "2029-01-01T00:00:00"
+apply_on = "2024-01-01T00:00:00"
 
 [[process]]
 id = "F"
 command = "ls -la "
-apply_on = "2029-01-01T00:00:00"
+apply_on = "2024-01-01T00:00:00"
+
+
+# test circular references
+# [[process]]
+# id = "TEST_CIRC REF A"
+# command = "ls -la"
+# apply_on = "2024-01-01T00:00:00"
+# depends_on = ["TEST_CIRC REF B"]
+
+# [[process]]
+# id = "TEST_CIRC REF B"
+# command = "ls -la"
+# apply_on = "2024-01-01T00:00:00"
+# depends_on = ["TEST_CIRC REF A"]

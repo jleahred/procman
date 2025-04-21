@@ -10,7 +10,7 @@ pub(crate) fn read_config_file_or_panic(file_path: &str) -> Config {
     let config: Config = toml::from_str(&content).unwrap_or_else(|err| {
         panic!("Failed to parse the TOML file at '{}': {}", file_path, err);
     });
-    config.check_config().unwrap_or_else(|err| {
+    config.check().unwrap_or_else(|err| {
         panic!("Configuration error: {}", err);
     });
     config

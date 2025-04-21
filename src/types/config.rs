@@ -20,6 +20,7 @@ pub(crate) struct ConfigUid(pub(crate) String);
 pub(crate) struct Command(pub(crate) String);
 
 #[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Debug)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct CommandStartHealthCheck {
     pub(crate) command: Command,
     pub(crate) timeout: Option<std::time::Duration>,
@@ -71,17 +72,8 @@ pub(crate) enum ProcessType {
 }
 
 impl Config {
-    pub(crate) fn check_config(&self) -> Result<(), String> {
-        if self.uid.0.is_empty() {
-            return Err("UID cannot be empty".to_string());
-        }
-        if self.process.is_empty() {
-            return Err("Process list cannot be empty".to_string());
-        }
-        for process in &self.process {
-            process.check_config()?;
-        }
-        Ok(())
+    pub(crate) fn check(&self) -> Result<(), String> {
+        imp::check(&self)
     }
 
     pub(crate) fn get_active_procs_by_config(&self) -> Vec<ProcessConfig> {
