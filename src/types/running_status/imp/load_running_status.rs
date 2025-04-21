@@ -21,6 +21,7 @@ pub(crate) fn load_running_status(file_path: &str, file_uid: &ConfigUid) -> Runn
             file_uid: file_uid.clone(),
             _file_format: String::from("0"),
             processes: HashMap::new(),
+            last_update: chrono::Local::now().naive_utc(),
         }
     }
 }

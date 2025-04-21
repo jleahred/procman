@@ -12,11 +12,12 @@ pub(crate) struct RunningStatus {
     #[serde(rename = "file_format")]
     pub(crate) _file_format: String,
     pub(crate) processes: HashMap<ProcessId, ProcessWatched>,
+    pub(crate) last_update: NaiveDateTime,
 }
 
 impl RunningStatus {
     pub(crate) fn save(self, file_path: &str) {
-        imp::save(&self, file_path);
+        imp::save(self, file_path);
     }
     pub(crate) fn send_kill_on_stopping_processes(self) -> Self {
         imp::send_kill_on_stopping_processes(self)

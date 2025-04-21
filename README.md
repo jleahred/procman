@@ -3,8 +3,10 @@
 
 ## TODO
 
-* eliminar los println! y eprintln! centralizar
+* eliminar los println! y eprintln! centralizar (afecta al tui)
+* log con tiempo ejecución oneshot
 * tui
+    * estructura con estado completo para renderizar
     * filter processes
     * detect if managing/monitoring is stopped
     * show full config for process

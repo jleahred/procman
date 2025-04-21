@@ -119,7 +119,7 @@ fn render_table<'a>(
         )
         .block(
             Block::default()
-                .title(format!("Process Table for   {}", full_file_name))
+                .title(format!(" Process Table for   [{}] ", full_file_name))
                 .borders(Borders::ALL),
         )
         .widths(&[
