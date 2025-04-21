@@ -4,6 +4,7 @@
 ## TODO
 
 * tui
+* ajustar el tiempo de chequeo
 * revisar la visiblidad de módulos pub(crate) pub(super)
 * groups
 * check lockfile exits and is mine

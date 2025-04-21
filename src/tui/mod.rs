@@ -1,6 +1,6 @@
 //  experimental!!!
 
-use crossterm::event::{self, Event, KeyCode};
+use crossterm::event::{self};
 use ratatui::{
     backend::CrosstermBackend,
     layout::Constraint,
@@ -9,10 +9,23 @@ use ratatui::{
     widgets::{Block, Borders, Cell, Row, Table},
     Terminal,
 };
-use std::io;
+use ratatui::{
+    layout::{Direction, Layout},
+    text::Spans,
+    widgets::Paragraph,
+};
+use std::{
+    collections::{BTreeMap, HashMap},
+    io,
+};
 
-pub(crate) fn run(processes_uid: &str) -> Result<(), Box<dyn std::error::Error>> {
-    // Configurar el backend y el terminal
+use crate::{
+    read_config_file,
+    types::config::{Config, ProcessConfig, ProcessId},
+};
+
+pub(crate) fn run() -> Result<(), Box<dyn std::error::Error>> {
+    // configure
     let stdout = io::stdout();
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
@@ -21,61 +34,46 @@ pub(crate) fn run(processes_uid: &str) -> Result<(), Box<dyn std::error::Error>>
     terminal.clear()?;
 
     let result = (|| -> Result<(), Box<dyn std::error::Error>> {
-        use std::time::{Duration, Instant};
+        use std::time::Duration;
 
         loop {
-            let binding = get_process_info(processes_uid);
+            let processes = get_process_info();
+
             terminal.draw(|f| {
-                let rows: Vec<Row> = binding
-                    .iter()
-                    .map(|(id, status, command)| {
-                        let color = match status.as_str() {
-                            "running" => Color::Green,
-                            "starting" => Color::Yellow,
-                            "stopped" => Color::Red,
-                            _ => Color::White,
-                        };
+                let chunks = Layout::default()
+                    .direction(Direction::Vertical)
+                    .margin(1)
+                    .constraints([Constraint::Min(1), Constraint::Length(1)])
+                    .split(f.size());
 
-                        Row::new(vec![
-                            Cell::from(id.clone()),
-                            Cell::from(Span::styled(status, Style::default().fg(color))),
-                            Cell::from(command.clone()),
-                        ])
-                    })
-                    .collect();
+                // tabla de procesos
+                f.render_widget(render_table(&processes), chunks[0]);
 
-                let table = Table::new(rows)
-                    .header(
-                        Row::new(vec!["Process ID", "Status", "Command"])
-                            .style(Style::default().add_modifier(Modifier::BOLD)),
-                    )
-                    .block(
-                        Block::default()
-                            .title("Process Table")
-                            .borders(Borders::ALL),
-                    )
-                    .widths(&[
-                        Constraint::Length(15),
-                        Constraint::Length(15),
-                        Constraint::Percentage(70),
-                    ]);
-
-                f.render_widget(table, f.size());
+                // footer con teclas
+                let footer = Paragraph::new(Spans::from(vec![
+                    Span::raw("Press "),
+                    Span::styled("q", Style::default().add_modifier(Modifier::BOLD)),
+                    Span::raw(" or "),
+                    Span::styled("Ctrl+C", Style::default().add_modifier(Modifier::BOLD)),
+                    Span::raw(" to exit."),
+                ]));
+                f.render_widget(footer, chunks[1]);
             })?;
+            // terminal.draw(|f| {
+            //     f.render_widget(render_table(&processes), f.size());
+            // })?;
 
-            // Espera eventos por 1 segundo o hasta que haya input
+            // wait for 1 second before refreshing the screen
             if crossterm::event::poll(Duration::from_secs(1))? {
                 if let event::Event::Key(key) = event::read()? {
                     if key.code == event::KeyCode::Char('q')
-                        || key.code == event::KeyCode::Char('z')
+                        || key.code == event::KeyCode::Char('c')
                             && key.modifiers.contains(event::KeyModifiers::CONTROL)
                     {
                         break;
                     }
                 }
             }
-
-            // Aquí podrías actualizar el vector `processes` si lo hicieras mutable o lo recargases desde fichero
         }
         Ok(())
     })();
@@ -85,105 +83,140 @@ pub(crate) fn run(processes_uid: &str) -> Result<(), Box<dyn std::error::Error>>
     result
 }
 
-fn get_process_info(processes_uid: &str) -> Vec<(String, String, String)> {
-    let running_status = load_running_status("/tmp/procman/", &ConfigUid(processes_uid.to_owned()));
+fn render_table(info: &BTreeMap<ProcessId, MergedProcessInfo>) -> Table {
+    let render_rows: Vec<Row> = render_rows(&info);
 
-    let mut processes: Vec<(String, String, String)> = running_status
-        .processes
+    Table::new(render_rows)
+        .header(
+            Row::new(vec!["Process ID", "Status", "Command"])
+                .style(Style::default().add_modifier(Modifier::BOLD)),
+        )
+        .block(
+            Block::default()
+                .title("Process Table")
+                .borders(Borders::ALL),
+        )
+        .widths(&[
+            Constraint::Length(20),
+            Constraint::Length(20),
+            Constraint::Percentage(60),
+        ])
+}
+
+fn render_rows(info: &BTreeMap<ProcessId, MergedProcessInfo>) -> Vec<Row> {
+    info.iter()
+        .map(|(proc_id, merged_info)| render_row(proc_id, merged_info))
+        .collect()
+}
+
+fn render_row<'a>(proc_id: &ProcessId, merged_info: &MergedProcessInfo) -> Row<'a> {
+    Row::new(vec![
+        Cell::from(merged_info.process_id.0.clone()),
+        Cell::from(render_status(merged_info)),
+        Cell::from(render_command(merged_info)),
+    ])
+}
+
+fn render_status<'a>(merged_info: &MergedProcessInfo) -> Cell<'a> {
+    let (st_color, st_text) = match merged_info.running {
+        Some(ref running) => match running.status {
+            crate::types::running_status::ProcessStatus::Running { .. } => {
+                (Color::Green, "running")
+            }
+            crate::types::running_status::ProcessStatus::Ready2Start { .. } => {
+                (Color::Yellow, "ready")
+            }
+            crate::types::running_status::ProcessStatus::PendingHealthStartCheck { .. } => {
+                (Color::Yellow, "pend health start")
+            }
+            crate::types::running_status::ProcessStatus::Stopping { .. } => {
+                (Color::Yellow, "stopping")
+            }
+            crate::types::running_status::ProcessStatus::ScheduledStop { .. } => {
+                (Color::Yellow, "scheduled stop")
+            }
+        },
+        None => {
+            if merged_info.config_active.is_none() {
+                return Cell::from(Span::styled(
+                    "not actived",
+                    Style::default().fg(Color::Yellow),
+                ));
+            } else {
+                (Color::Red, "not running")
+            }
+        }
+    };
+
+    Cell::from(Span::styled(st_text, Style::default().fg(st_color)))
+}
+
+fn render_command<'a>(merged_info: &MergedProcessInfo) -> Cell<'a> {
+    match merged_info.config_active {
+        Some(ref config) => {
+            return Cell::from(Span::styled(
+                config.command.0.clone(),
+                Style::default().fg(Color::White),
+            ));
+        }
+        None => {
+            return Cell::from(Span::styled(
+                "not actived",
+                Style::default().fg(Color::Yellow),
+            ));
+        }
+    }
+}
+
+struct MergedProcessInfo {
+    process_id: ProcessId,
+    config_active: Option<crate::types::config::ProcessConfig>,
+    running: Option<crate::types::running_status::ProcessWatched>,
+}
+
+fn get_process_info() -> BTreeMap<ProcessId, MergedProcessInfo> {
+    let cfg = read_config_file::read_config_file_or_panic("processes.toml"); //  todo:0
+    let running_status =
+        crate::types::running_status::load_running_status("/tmp/procman/", &cfg.uid);
+    get_process_info_merged(&cfg, &running_status.processes)
+}
+
+fn get_process_info_merged(
+    config: &Config,
+    running_status: &HashMap<ProcessId, crate::types::running_status::ProcessWatched>,
+) -> BTreeMap<ProcessId, MergedProcessInfo> {
+    let mut result: BTreeMap<ProcessId, MergedProcessInfo> = config
+        .process
         .iter()
-        .map(|(id, process)| {
-            let status = match &process.status {
-                ProcessStatus::Running { .. } => "running".to_string(),
-                ProcessStatus::Ready2Start { .. } => "ready".to_string(),
-                ProcessStatus::PendingHealthStartCheck { .. } => "starting".to_string(),
-                ProcessStatus::Stopping { .. } => "stopping".to_string(),
-                ProcessStatus::ScheduledStop { .. } => "scheduled_stop".to_string(),
-            };
-
-            let command = match &process.status {
-                ProcessStatus::Ready2Start { command, .. } => command.0.to_string(),
-                _ => "N/A".to_string(),
-            };
-
-            (id.0.to_string(), status, command)
+        .map(|process| {
+            (
+                process.id.clone(),
+                MergedProcessInfo {
+                    process_id: process.id.clone(),
+                    config_active: None,
+                    running: None,
+                },
+            )
         })
         .collect();
 
-    processes.sort_by(|a, b| a.0.cmp(&b.0)); // Ordenar alfabéticamente por el primer campo
-    processes
-}
+    let map_proc_id_active_cfg: BTreeMap<ProcessId, ProcessConfig> = config
+        .get_active_procs_by_config()
+        .into_iter()
+        .map(|process| (process.id.clone(), process))
+        .collect();
 
-use crate::types::config::{Command, CommandStartHealthCheck, ConfigUid, ProcessConfig, ProcessId};
-use chrono::NaiveDateTime;
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-
-#[derive(Deserialize, Serialize, Debug)]
-pub(crate) struct RunningStatus {
-    pub(crate) file_uid: ConfigUid,
-    #[serde(rename = "file_format")]
-    pub(crate) _file_format: String,
-    pub(crate) processes: HashMap<ProcessId, ProcessWatched>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub(crate) struct ProcessWatched {
-    pub(crate) id: ProcessId,
-    pub(crate) procrust_uid: String,
-    pub(crate) apply_on: NaiveDateTime,
-    pub(crate) status: ProcessStatus,
-    pub(crate) applied_on: NaiveDateTime,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-pub(crate) enum ProcessStatus {
-    Ready2Start {
-        command: Command,
-        process_id: ProcessId,
-        start_health_check: Option<CommandStartHealthCheck>,
-        apply_on: NaiveDateTime,
-    },
-    PendingHealthStartCheck {
-        pid: u32,
-        start_health_check: Option<CommandStartHealthCheck>,
-        retries: u32,
-        last_attempt: chrono::DateTime<chrono::Local>,
-    },
-    Running {
-        pid: u32,
-    },
-    Stopping {
-        pid: u32,
-        retries: u32,
-        last_attempt: chrono::DateTime<chrono::Local>,
-    },
-    ScheduledStop {
-        pid: u32,
-    },
-}
-
-// use crate::types::config::ConfigUid;
-// use std::collections::HashMap;
-use std::fs;
-use std::path::Path;
-
-pub(crate) fn load_running_status(file_path: &str, file_uid: &ConfigUid) -> RunningStatus {
-    let full_path = format!("{}/{}.toml", file_path, file_uid.0); // Construir la ruta completa
-
-    if Path::new(&full_path).exists() {
-        let content = fs::read_to_string(&full_path)
-            .unwrap_or_else(|err| panic!("Failed to read file {}: {}", full_path, err));
-        toml::from_str(&content)
-            .unwrap_or_else(|err| panic!("Failed to parse TOML from file {}: {}", full_path, err))
-    } else {
-        println!(
-            "File {} does not exist. Returning default RunningStatus.",
-            full_path
-        );
-        RunningStatus {
-            file_uid: file_uid.clone(),
-            _file_format: String::from("0"),
-            processes: HashMap::new(),
+    for (proc_id, process) in map_proc_id_active_cfg.iter() {
+        if let Some(entry) = result.get_mut(proc_id) {
+            entry.config_active = Some(process.clone());
         }
     }
+
+    for (proc_id, process_watched) in running_status {
+        if let Some(entry) = result.get_mut(proc_id) {
+            entry.running = Some(process_watched.clone());
+        }
+    }
+
+    result
 }

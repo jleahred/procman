@@ -9,7 +9,7 @@ mod tests;
 
 /// process identification
 /// it's a unique string to identify a process to watch
-#[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Debug)]
+#[derive(Deserialize, Serialize, PartialEq, Eq, Hash, PartialOrd, Ord, Clone, Debug)]
 pub(crate) struct ProcessId(pub(crate) String);
 
 /// Each file with a process cofig has to use a unique ID

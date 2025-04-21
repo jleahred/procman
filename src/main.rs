@@ -40,8 +40,8 @@ fn main() {
             }
             cli_params::Commands::Tui { processes_filename } => {
                 println!("TUI");
-                let config = read_config_file::read_config_file_or_panic(&processes_filename);
-                tui::run(&config.uid.0).unwrap();
+                // let config = read_config_file::read_config_file_or_panic(&processes_filename);
+                tui::run().unwrap();
             }
     }
 
