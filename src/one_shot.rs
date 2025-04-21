@@ -6,7 +6,7 @@ use crate::types::running_status;
 
 const RUNNING_STATUS_FOLDER: &str = "/tmp/procman";
 
-pub(crate) fn one_shot2(full_file_name: &str) {
+pub(crate) fn one_shot(full_file_name: &str) {
     println!("\n--------------------------------------------------------------------------------");
     println!("Checking... {}\n", chrono::Local::now());
 

@@ -4,7 +4,12 @@ use crate::{
     read_config_file,
     types::config::{Config, ProcessConfig, ProcessId},
 };
-use crossterm::event::{self};
+use crossterm::execute;
+use crossterm::terminal::EnterAlternateScreen;
+use crossterm::{
+    event::{self},
+    terminal::LeaveAlternateScreen,
+};
 use ratatui::{
     backend::CrosstermBackend,
     layout::Constraint,
@@ -30,7 +35,8 @@ pub(crate) fn run(cfg_file_name: &str) -> Result<(), Box<dyn std::error::Error>>
     let mut terminal = Terminal::new(backend)?;
 
     crossterm::terminal::enable_raw_mode()?;
-    terminal.clear()?;
+    execute!(io::stdout(), EnterAlternateScreen)?;
+    // terminal.clear()?;
 
     let log_lines: Vec<String> = vec!["test line1".to_string(), "test line2".to_string()];
     let scroll_offset = 0;
@@ -101,7 +107,8 @@ pub(crate) fn run(cfg_file_name: &str) -> Result<(), Box<dyn std::error::Error>>
     })();
 
     crossterm::terminal::disable_raw_mode()?;
-    terminal.clear()?;
+    execute!(io::stdout(), LeaveAlternateScreen)?;
+    // terminal.clear()?;
 
     result
 }
