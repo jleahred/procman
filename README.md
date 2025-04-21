@@ -5,6 +5,7 @@
 
 * eliminar los println! y eprintln! centralizar
 * tui
+    * filter processes
     * detect if managing/monitoring is stopped
     * show full config for process
     * show depen_on and depend_from processes and navigate to them

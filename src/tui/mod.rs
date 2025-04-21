@@ -1,12 +1,16 @@
 //  experimental!!!
 
+use crate::{
+    read_config_file,
+    types::config::{Config, ProcessConfig, ProcessId},
+};
 use crossterm::event::{self};
 use ratatui::{
     backend::CrosstermBackend,
     layout::Constraint,
     style::{Color, Modifier, Style},
     text::Span,
-    widgets::{Block, Borders, Cell, Row, Table},
+    widgets::{Block, Borders, Cell, Row, Table, Wrap},
     Terminal,
 };
 use ratatui::{
@@ -16,38 +20,55 @@ use ratatui::{
 };
 use std::{
     collections::{BTreeMap, HashMap},
-    io,
+    fs, io,
+    path::Path,
 };
 
-use crate::{
-    read_config_file,
-    types::config::{Config, ProcessConfig, ProcessId},
-};
-
-pub(crate) fn run(run_status_filename: &str) -> Result<(), Box<dyn std::error::Error>> {
-    // configure
-    let stdout = io::stdout();
+pub(crate) fn run(cfg_file_name: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let stdout = io::stdout(); //  todo:
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
     crossterm::terminal::enable_raw_mode()?;
     terminal.clear()?;
 
+    let log_lines: Vec<String> = vec!["test line1".to_string(), "test line2".to_string()];
+    let scroll_offset = 0;
+
     let result = (|| -> Result<(), Box<dyn std::error::Error>> {
         use std::time::Duration;
 
         loop {
-            let processes = get_process_info(&run_status_filename);
+            let status = get_status(&cfg_file_name);
 
             terminal.draw(|f| {
                 let chunks = Layout::default()
                     .direction(Direction::Vertical)
-                    .margin(1)
-                    .constraints([Constraint::Min(1), Constraint::Length(1)])
+                    .margin(0)
+                    .constraints([
+                        Constraint::Min(1),
+                        Constraint::Length(5),
+                        Constraint::Length(1),
+                    ])
                     .split(f.size());
 
                 // tabla de procesos
-                f.render_widget(render_table(&processes), chunks[0]);
+                f.render_widget(
+                    render_table(&status.cfg_file_name, &status.merged_process_info),
+                    chunks[0],
+                );
+
+                // zona de texto con scroll
+                let paragraph = Paragraph::new(
+                    log_lines
+                        .iter()
+                        .map(|line| Spans::from(Span::raw(line.clone())))
+                        .collect::<Vec<Spans>>(),
+                )
+                .block(Block::default().borders(Borders::ALL).title("out/err"))
+                .scroll((scroll_offset as u16, 0))
+                .wrap(Wrap { trim: false });
+                f.render_widget(paragraph, chunks[1]);
 
                 // footer con teclas
                 let footer = Paragraph::new(Spans::from(vec![
@@ -57,7 +78,7 @@ pub(crate) fn run(run_status_filename: &str) -> Result<(), Box<dyn std::error::E
                     Span::styled("Ctrl+C", Style::default().add_modifier(Modifier::BOLD)),
                     Span::raw(" to exit."),
                 ]));
-                f.render_widget(footer, chunks[1]);
+                f.render_widget(footer, chunks[2]);
             })?;
             // terminal.draw(|f| {
             //     f.render_widget(render_table(&processes), f.size());
@@ -75,15 +96,20 @@ pub(crate) fn run(run_status_filename: &str) -> Result<(), Box<dyn std::error::E
                 }
             }
         }
+
         Ok(())
     })();
 
     crossterm::terminal::disable_raw_mode()?;
     terminal.clear()?;
+
     result
 }
 
-fn render_table(info: &BTreeMap<ProcessId, MergedProcessInfo>) -> Table {
+fn render_table<'a>(
+    full_file_name: &str,
+    info: &'a BTreeMap<ProcessId, MergedProcessInfoPerProcess>,
+) -> Table<'a> {
     let render_rows: Vec<Row> = render_rows(&info);
 
     Table::new(render_rows)
@@ -93,7 +119,7 @@ fn render_table(info: &BTreeMap<ProcessId, MergedProcessInfo>) -> Table {
         )
         .block(
             Block::default()
-                .title("Process Table")
+                .title(format!("Process Table for   {}", full_file_name))
                 .borders(Borders::ALL),
         )
         .widths(&[
@@ -103,13 +129,13 @@ fn render_table(info: &BTreeMap<ProcessId, MergedProcessInfo>) -> Table {
         ])
 }
 
-fn render_rows(info: &BTreeMap<ProcessId, MergedProcessInfo>) -> Vec<Row> {
+fn render_rows<'a>(info: &'a BTreeMap<ProcessId, MergedProcessInfoPerProcess>) -> Vec<Row<'a>> {
     info.iter()
         .map(|(proc_id, merged_info)| render_row(proc_id, merged_info))
         .collect()
 }
 
-fn render_row<'a>(_proc_id: &ProcessId, merged_info: &MergedProcessInfo) -> Row<'a> {
+fn render_row<'a>(_proc_id: &ProcessId, merged_info: &'a MergedProcessInfoPerProcess) -> Row<'a> {
     Row::new(vec![
         Cell::from(merged_info.process_id.0.clone()),
         Cell::from(render_status(merged_info)),
@@ -117,7 +143,7 @@ fn render_row<'a>(_proc_id: &ProcessId, merged_info: &MergedProcessInfo) -> Row<
     ])
 }
 
-fn render_status<'a>(merged_info: &MergedProcessInfo) -> Cell<'a> {
+fn render_status<'a>(merged_info: &MergedProcessInfoPerProcess) -> Cell<'a> {
     let (st_color, st_text) = match merged_info.running {
         Some(ref running) => match running.status {
             crate::types::running_status::ProcessStatus::Running { .. } => {
@@ -160,7 +186,7 @@ fn render_status<'a>(merged_info: &MergedProcessInfo) -> Cell<'a> {
     Cell::from(Span::styled(st_text, Style::default().fg(st_color)))
 }
 
-fn render_command<'a>(merged_info: &MergedProcessInfo) -> Cell<'a> {
+fn render_command<'a>(merged_info: &MergedProcessInfoPerProcess) -> Cell<'a> {
     match merged_info.config_active {
         Some(ref config) => {
             return Cell::from(Span::styled(
@@ -184,15 +210,28 @@ fn render_command<'a>(merged_info: &MergedProcessInfo) -> Cell<'a> {
     }
 }
 
-struct MergedProcessInfo {
+struct Status {
+    cfg_file_name: String,
+    merged_process_info: BTreeMap<ProcessId, MergedProcessInfoPerProcess>,
+}
+struct MergedProcessInfoPerProcess {
     process_id: ProcessId,
     in_config: bool,
     config_active: Option<crate::types::config::ProcessConfig>,
     running: Option<crate::types::running_status::ProcessWatched>,
 }
 
-fn get_process_info(run_status_filename: &str) -> BTreeMap<ProcessId, MergedProcessInfo> {
-    let cfg = read_config_file::read_config_file_or_panic(&run_status_filename); //  todo:0
+fn get_status(cfg_file_name: &str) -> Status {
+    let relative_path = Path::new(cfg_file_name);
+    let absolute_path = fs::canonicalize(&relative_path).expect("Failed to get absolute path");
+    Status {
+        cfg_file_name: absolute_path.display().to_string(),
+        merged_process_info: get_process_info(cfg_file_name),
+    }
+}
+
+fn get_process_info(cfg_file_name: &str) -> BTreeMap<ProcessId, MergedProcessInfoPerProcess> {
+    let cfg = read_config_file::read_config_file_or_panic(&cfg_file_name); //  todo:0
     let running_status =
         crate::types::running_status::load_running_status("/tmp/procman/", &cfg.uid);
     get_process_info_merged(&cfg, &running_status.processes)
@@ -201,14 +240,14 @@ fn get_process_info(run_status_filename: &str) -> BTreeMap<ProcessId, MergedProc
 fn get_process_info_merged(
     config: &Config,
     running_status: &HashMap<ProcessId, crate::types::running_status::ProcessWatched>,
-) -> BTreeMap<ProcessId, MergedProcessInfo> {
-    let mut result: BTreeMap<ProcessId, MergedProcessInfo> = config
+) -> BTreeMap<ProcessId, MergedProcessInfoPerProcess> {
+    let mut result: BTreeMap<ProcessId, MergedProcessInfoPerProcess> = config
         .process
         .iter()
         .map(|process| {
             (
                 process.id.clone(),
-                MergedProcessInfo {
+                MergedProcessInfoPerProcess {
                     process_id: process.id.clone(),
                     in_config: true,
                     config_active: None,
@@ -221,7 +260,7 @@ fn get_process_info_merged(
     for (proc_id, process_watched) in running_status {
         result
             .entry(proc_id.clone())
-            .or_insert_with(|| MergedProcessInfo {
+            .or_insert_with(|| MergedProcessInfoPerProcess {
                 process_id: proc_id.clone(),
                 in_config: false,
                 config_active: None,
