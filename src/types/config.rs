@@ -26,6 +26,13 @@ pub(crate) struct CommandStartHealthCheck {
     pub(crate) timeout: Option<std::time::Duration>,
 }
 
+#[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct CommandInit {
+    pub(crate) command: Command,
+    pub(crate) timeout: Option<std::time::Duration>,
+}
+
 #[derive(Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct Config {
@@ -41,6 +48,7 @@ pub(crate) struct ProcessConfig {
     pub(crate) id: ProcessId,
     pub(crate) command: Command,
     pub(crate) start_health_check: Option<CommandStartHealthCheck>,
+    pub(crate) init_command: Option<CommandInit>,
     pub(crate) apply_on: NaiveDateTime,
 
     #[serde(default)]

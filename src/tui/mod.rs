@@ -121,7 +121,7 @@ fn render_table<'a>(
 
     Table::new(render_rows)
         .header(
-            Row::new(vec!["Process ID", "Status", "Command"])
+            Row::new(vec!["Process ID", "Status", "Command (in config)"])
                 .style(Style::default().add_modifier(Modifier::BOLD)),
         )
         .block(
@@ -160,19 +160,30 @@ fn render_status<'a>(merged_info: &MergedProcessInfoPerProcess) -> Cell<'a> {
                         Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
                     ));
                 }
-                (Color::Green, "running")
+                (Color::Green, "running".to_string())
             }
             crate::types::running_status::ProcessStatus::Ready2Start { .. } => {
-                (Color::Yellow, "ready")
+                (Color::Yellow, "ready".to_string())
             }
-            crate::types::running_status::ProcessStatus::PendingHealthStartCheck { .. } => {
-                (Color::Yellow, "pend health start")
-            }
+            crate::types::running_status::ProcessStatus::PendingHealthStartCheck {
+                retries,
+                ..
+            } => (Color::Yellow, format!("health start({})", retries)),
             crate::types::running_status::ProcessStatus::Stopping { .. } => {
-                (Color::Yellow, "stopping")
+                (Color::Yellow, "stopping".to_string())
             }
             crate::types::running_status::ProcessStatus::ScheduledStop { .. } => {
-                (Color::Yellow, "scheduled stop")
+                (Color::Yellow, "scheduled stop".to_string())
+            }
+            crate::types::running_status::ProcessStatus::PendingInitCmd { .. } => {
+                if merged_info.config_active.is_none() {
+                    return Cell::from(Span::styled(
+                        "running init",
+                        Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+                    ));
+                } else {
+                    (Color::Yellow, "running init".to_string())
+                }
             }
         },
         None => {

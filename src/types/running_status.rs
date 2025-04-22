@@ -6,6 +6,8 @@ pub(crate) use imp::load_running_status::load_running_status;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+use super::config::CommandInit;
+
 #[derive(Deserialize, Serialize, Debug)]
 pub(crate) struct RunningStatus {
     pub(crate) file_uid: ConfigUid,
@@ -23,8 +25,18 @@ impl RunningStatus {
         imp::send_kill_on_stopping_processes(self)
     }
 
-    pub(crate) fn mark_stopping(self, conf_proc_active: &[ProcessConfig]) -> Self {
-        imp::mark_stopping(self, conf_proc_active)
+    pub(crate) fn mark_stopping_not_active_in_cfg(
+        self,
+        conf_proc_active: &[ProcessConfig],
+    ) -> Self {
+        imp::mark_stopping_not_active_in_cfg(self, conf_proc_active)
+    }
+
+    pub(crate) fn mark_stopping_if_apply_on_changed(
+        self,
+        conf_proc_active: &[ProcessConfig],
+    ) -> Self {
+        imp::mark_stopping_if_apply_on_changed(self, conf_proc_active)
     }
 
     pub(crate) fn del_if_missing_pid(self) -> Self {
@@ -42,6 +54,11 @@ impl RunningStatus {
     pub(crate) fn check_start_held_processes(self) -> Self {
         imp::check_start_held_processes(self)
     }
+
+    pub(crate) fn run_init_cmds(self) -> Self {
+        imp::run_init_cmds(self)
+    }
+    
 
     //  -------------------------------------------------
 
@@ -77,11 +94,19 @@ pub(crate) enum ProcessStatus {
         command: Command,
         process_id: ProcessId,
         start_health_check: Option<CommandStartHealthCheck>,
+        init_command: Option<CommandInit>,
         apply_on: NaiveDateTime,
     },
     PendingHealthStartCheck {
         pid: u32,
         start_health_check: Option<CommandStartHealthCheck>,
+        init_command: Option<CommandInit>,
+        retries: u32,
+        last_attempt: chrono::DateTime<chrono::Local>,
+    },
+    PendingInitCmd {
+        pid: u32,
+        init_command: Option<CommandInit>,
         retries: u32,
         last_attempt: chrono::DateTime<chrono::Local>,
     },

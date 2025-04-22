@@ -16,6 +16,7 @@ pub(crate) fn launch_ready2start(mut running_status: RunningStatus) -> RunningSt
                 command,
                 process_id,
                 start_health_check,
+                init_command,
                 apply_on,
             } => {
                 println!(
@@ -39,6 +40,7 @@ pub(crate) fn launch_ready2start(mut running_status: RunningStatus) -> RunningSt
                                 status: ProcessStatus::PendingHealthStartCheck {
                                     pid,
                                     start_health_check,
+                                    init_command,
                                     retries: 0,
                                     last_attempt: chrono::Local::now(),
                                 },
@@ -68,8 +70,6 @@ fn run_process(
         .spawn()?;
     //  todo: convendría desconectar la salida de error y la salida estándar para evitar zombis?
 
-    thread::sleep(Duration::from_secs(1));
-
     // match child.try_wait()? {
     //     Some(status) => {
     //         if status.success() {
@@ -86,6 +86,8 @@ fn run_process(
     //     }
     //     None => {}
     // }
+
+    thread::sleep(Duration::from_secs(1));
 
     Ok(child.id())
 }

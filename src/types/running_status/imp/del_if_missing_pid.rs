@@ -12,6 +12,7 @@ pub(crate) fn del_if_missing_pid(mut rs: RunningStatus) -> RunningStatus {
             ProcessStatus::Stopping { pid, .. } => Some(pid),
             ProcessStatus::Running { pid } => Some(pid),
             ProcessStatus::PendingHealthStartCheck { pid, .. } => Some(pid),
+            ProcessStatus::PendingInitCmd { pid, .. } => Some(pid),
             ProcessStatus::Ready2Start { .. } => None,
         };
 

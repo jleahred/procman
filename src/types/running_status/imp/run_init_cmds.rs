@@ -6,11 +6,10 @@ use std::{process::Command, time};
 
 use super::super::{ProcessStatus, RunningStatus};
 
-pub(crate) fn check_start_held_processes(mut rs: RunningStatus) -> RunningStatus {
+pub(crate) fn run_init_cmds(mut rs: RunningStatus) -> RunningStatus {
     for (id, process) in rs.processes.iter_mut() {
-        if let ProcessStatus::PendingHealthStartCheck {
+        if let ProcessStatus::PendingInitCmd {
             pid,
-            start_health_check,
             init_command,
             retries,
             last_attempt,
@@ -18,24 +17,24 @@ pub(crate) fn check_start_held_processes(mut rs: RunningStatus) -> RunningStatus
         {
             if retries > 0 && last_attempt + Duration::from_secs(20) > Local::now() {
                 println!(
-                    "[{}] Skipping start health check. Last attempt was at {}",
+                    "[{}] Skipping init command. Last attempt was at {}",
                     id.0, last_attempt
                 );
                 continue;
             }
 
-            match start_health_check {
+            match init_command {
                 Some(ref cmd) => {
-                    println!("[{}] cheking start health", id.0);
-                    let timeout = cmd.timeout.unwrap_or_else(|| Duration::from_secs(2));
+                    println!("[{}] running init command", id.0);
+                    let timeout = cmd.timeout.unwrap_or_else(|| Duration::from_secs(120));
                     match run_command_with_timeout(&cmd.command.0, timeout) {
                         Ok(()) => {
-                            println!("[{}] Health check succeeded for process", id.0);
-                            process.status = ProcessStatus::PendingInitCmd { pid, init_command, retries: 0, last_attempt:  Local::now() };    //  todo:0
+                            println!("[{}] Init command succeeded for process", id.0);
+                            process.status = ProcessStatus::Running { pid };
                         }
                         Err(err) => {
                             eprintln!(
-                                "[{}] Health check failed: {}. Retries: {}",
+                                "[{}] Init command failed: {}. Retries: {}",
                                 id.0, err, retries
                             );
                             eprintln!("[{}] Program process restart", id.0);
@@ -48,9 +47,8 @@ pub(crate) fn check_start_held_processes(mut rs: RunningStatus) -> RunningStatus
                                     last_attempt: Local::now(),
                                 };
                             } else {
-                                process.status = ProcessStatus::PendingHealthStartCheck {
+                                process.status = ProcessStatus::PendingInitCmd {
                                     pid,
-                                    start_health_check,
                                     init_command,
                                     retries: retries + 1,
                                     last_attempt: Local::now(),
@@ -61,10 +59,10 @@ pub(crate) fn check_start_held_processes(mut rs: RunningStatus) -> RunningStatus
                 }
                 None => {
                     println!(
-                        "[{}] No start health check command provided for process",
+                        "[{}] No init command provided for process",
                         id.0
                     );
-                    process.status = ProcessStatus::PendingInitCmd { pid, init_command, retries: 0, last_attempt:  Local::now() };    //  todo:0
+                    process.status = ProcessStatus::Running { pid };
                 }
             }
         }
@@ -72,40 +70,6 @@ pub(crate) fn check_start_held_processes(mut rs: RunningStatus) -> RunningStatus
     rs
 }
 
-// fn run_command_with_timeout(command: &str, timeout: time::Duration) -> Result<(), String> {
-//     let timeout = if timeout > time::Duration::from_secs(2) {
-//         eprintln!(
-//             "Timeout is too big ({}), setting to 2 seconds",
-//             timeout.as_secs()
-//         );
-//         time::Duration::from_secs(2)
-//     } else {
-//         timeout
-//     };
-
-//     let (sender, receiver) = mpsc::channel();
-
-//     let command = command.to_string();
-
-//     thread::spawn(move || {
-//         let output = Command::new("sh").arg("-c").arg(command).output();
-
-//         let _ = sender.send(output);
-//     });
-
-//     let rec = receiver.recv_timeout(timeout);
-//     match rec {
-//         Ok(Ok(output)) => {
-//             if output.status.success() {
-//                 Ok(())
-//             } else {
-//                 Err(format!("Command failed with status: {}", output.status))
-//             }
-//         }
-//         Ok(Err(e)) => Err(format!("Command execution failed: {}", e)),
-//         Err(_) => Err("Command timed out".to_string()),
-//     }
-// }
 
 fn run_command_with_timeout(command: &str, timeout: time::Duration) -> Result<(), String> {
     let command = command.to_string();
