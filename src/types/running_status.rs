@@ -78,7 +78,7 @@ impl RunningStatus {
     // }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub(crate) struct ProcessWatched {
     pub(crate) id: ProcessId,
     pub(crate) procrust_uid: String,
@@ -87,7 +87,7 @@ pub(crate) struct ProcessWatched {
     pub(crate) applied_on: NaiveDateTime,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub(crate) enum ProcessStatus {
     Ready2Start {
         command: Command,
