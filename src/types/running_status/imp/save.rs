@@ -1,8 +1,9 @@
 use super::super::RunningStatus;
 use std::fs::{self, rename};
 use std::io::Write;
+use std::thread;
 
-pub(crate) fn save(mut run_status: RunningStatus, file_path: &str) {
+pub(crate) fn save(mut run_status: RunningStatus, file_path: &str) -> RunningStatus {
     run_status.last_update = chrono::Local::now().naive_utc();
 
     fs::create_dir_all(&file_path).expect(&format!("Failed to create directory on {}", file_path));
@@ -21,4 +22,8 @@ pub(crate) fn save(mut run_status: RunningStatus, file_path: &str) {
     rename(full_path_tmp.clone(), &full_path)
         .unwrap_or_else(|err| panic!("Failed to rename to file {}: {}", full_path_tmp, err));
     println!("RunningStatus saved to {}", full_path);
+
+    // not in a hurry, keep calm and cooperate
+    thread::sleep(std::time::Duration::from_millis(100));
+    run_status
 }

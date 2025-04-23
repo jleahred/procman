@@ -1,5 +1,3 @@
-use procfs::process;
-
 use super::super::{ProcessStatus, RunningStatus};
 use crate::types::config::{ProcessConfig, ProcessId};
 use std::collections::HashMap;
@@ -21,8 +19,9 @@ pub(crate) fn mark_stopping_if_apply_on_changed(
             ProcessStatus::ScheduledStop { .. } => {
                 continue;
             }
-            ProcessStatus::Running { pid } | ProcessStatus::PendingHealthStartCheck { pid, .. } 
-            | ProcessStatus::PendingInitCmd { pid, .. }=> {
+            ProcessStatus::Running { pid }
+            | ProcessStatus::PendingHealthStartCheck { pid, .. }
+            | ProcessStatus::PendingInitCmd { pid, .. } => {
                 if let Some(proc_cfg) = config_map.get(procid) {
                     if proc_cfg.apply_on != proc_watched.apply_on {
                         println!(

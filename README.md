@@ -227,8 +227,7 @@ stateDiagram-v2
     [*] --> Ready2Start
     Ready2Start --> PendingHelthCheckStart: ok
     PendingHelthCheckStart --> PedingInitCmd
-    PedingInitCmd  -->  Ready2Run
-    Ready2Run --> Running
+    PedingInitCmd  -->  Running
     Running --> ScheduledStop
     ScheduledStop --> Stopping: send kill
     Stopping --> [*]: pid gone

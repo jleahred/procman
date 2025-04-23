@@ -23,13 +23,20 @@ pub(crate) fn one_shot(full_file_name: &str) {
     //  --------------------
 
     running_status
-        .send_kill_on_stopping_processes()
-        .run_init_cmds()
-        .check_start_held_processes()
-        .mark_stopping_not_active_in_cfg(&active_procs_cfg_all_depends_running)
-        .mark_stopping_if_apply_on_changed(&active_procs_by_config)
-        .ready2start_from_missing_watched(&pending2watch)
-        .launch_ready2start()
         .del_if_missing_pid()
+        .save(RUNNING_STATUS_FOLDER)
+        .send_kill_on_stopping_processes()
+        .save(RUNNING_STATUS_FOLDER)
+        .run_init_cmds()
+        .save(RUNNING_STATUS_FOLDER)
+        .check_start_held_processes()
+        .save(RUNNING_STATUS_FOLDER)
+        .mark_stopping_not_active_in_cfg(&active_procs_cfg_all_depends_running)
+        .save(RUNNING_STATUS_FOLDER)
+        .mark_stopping_if_apply_on_changed(&active_procs_by_config)
+        .save(RUNNING_STATUS_FOLDER)
+        .ready2start_from_missing_watched(&pending2watch)
+        .save(RUNNING_STATUS_FOLDER)
+        .launch_ready2start()
         .save(RUNNING_STATUS_FOLDER);
 }

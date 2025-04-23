@@ -1,5 +1,3 @@
-use procfs::process::Process;
-
 use crate::types::config::ProcessId;
 use crate::types::running_status::{ProcessStatus, RunningStatus};
 
@@ -13,7 +11,7 @@ pub(crate) fn get_watched_ids(runnstatus: &RunningStatus) -> Vec<ProcessId> {
                 ProcessStatus::Stopping { pid, .. } => Some(pid),
                 ProcessStatus::Running { pid } => Some(pid),
                 ProcessStatus::PendingHealthStartCheck { pid, .. } => Some(pid),
-                ProcessStatus::PendingInitCmd { pid,  .. } => Some(pid),
+                ProcessStatus::PendingInitCmd { pid, .. } => Some(pid),
                 ProcessStatus::Ready2Start { .. } => None,
             };
 

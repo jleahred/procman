@@ -18,8 +18,8 @@ pub(crate) struct RunningStatus {
 }
 
 impl RunningStatus {
-    pub(crate) fn save(self, file_path: &str) {
-        imp::save(self, file_path);
+    pub(crate) fn save(self, file_path: &str) -> Self {
+        imp::save(self, file_path)
     }
     pub(crate) fn send_kill_on_stopping_processes(self) -> Self {
         imp::send_kill_on_stopping_processes(self)
@@ -58,7 +58,6 @@ impl RunningStatus {
     pub(crate) fn run_init_cmds(self) -> Self {
         imp::run_init_cmds(self)
     }
-    
 
     //  -------------------------------------------------
 
