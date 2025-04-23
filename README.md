@@ -3,6 +3,7 @@
 
 ## TODO
 
+* revisar varios ficheros en paralelo (no en tui)
 * eliminar los println! y eprintln! centralizar (afecta al tui)
 * log con tiempo ejecución oneshot
 * tui
@@ -80,6 +81,11 @@ week_days = ["mon", "wed", "thu", "sun"] # optional
 # week_days = "mon-fri"   # also valid
 # week_days = "all"   # also valid
 
+[process.init_command]
+command = "ls"
+timeout = { secs = 30, nanos = 0 }        # optional
+
+
 [process.start_health_check] # optional
 command = "curl -I http://localhost:8080"
 timeout = { secs = 30, nanos = 0 }        # optional
@@ -104,6 +110,39 @@ type = "normal"
 depends_on = ["another_process"]
 ```
 
+#### process.id
+
+Name to identify the process in logs, TUI, and dependencies
+
+#### process.command
+
+Command to be executed and monitored by the system
+
+#### process.apply_on
+
+From what moment the command should be executed
+
+Useful for scheduling future services, stopping in the future, updates, and rollbacks
+
+#### process.schedule.start_time / stop_time
+
+The process will be running during this time interval
+
+#### process.schedule.week_days
+
+To define which days of the week it applies
+
+#### process.init_command
+
+Once the process is running, it may be necessary to execute some initialization commands
+
+The process will not be marked as "running" until this command has successfully finished
+
+#### process.start_health_check
+
+Before considering the process as "running" and therefore before `init_command`, you have the opportunity to run a command to perform checks (connecting to a port, opening a file...)
+
+### Change only the command...
 
 If only the command line is changed, the system will not restart the service (this is intentional).
 
