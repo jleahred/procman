@@ -1,4 +1,14 @@
-mod imp;
+mod cfg_actived_not_in_watched;
+mod filter_config_by_dependencies;
+mod get_running_status;
+mod launch_process;
+mod move2stop_modif_signature;
+mod move2stop_pid_missing_on_system;
+mod move2stopping_modif_applyon;
+mod not_actived_config;
+mod save;
+mod stopped_with_active_cfg;
+mod try_stop;
 
 use crate::read_config_file::read_config_file_or_panic;
 use crate::types::config::Config;
