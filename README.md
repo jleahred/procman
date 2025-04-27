@@ -3,6 +3,16 @@
 
 ## TODO
 
+* rename running for watched when pertinent
+    * running_status
+    * process_running
+    * RUNNING_STATUS_FOLDER
+    * proc_id_running
+    * running.status
+    * 
+* tipo daemon
+* comando de cierre opcional
+* configuración tiempo entre rearranques
 * tipo de servicio adicional para podman run detatch
 * renonbrar los running por watched
 * revisar varios ficheros en paralelo (no en tui)
