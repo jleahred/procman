@@ -38,9 +38,9 @@ impl super::OneShot {
                                     proc_info.process_running = Some(ProcessWatched {
                                         id: proc_id.clone(),
                                         apply_on: process_config.apply_on,
-                                        status: ProcessStatus::Running {
+                                        status: ProcessStatus::PendingInitCmd {
                                             pid,
-                                            procrust_uid: get_cmdline(pid).unwrap(), // TODO: Mejorar con un UUID único
+                                            procman_uid: get_cmdline(pid).unwrap(), // TODO: Mejorar con un UUID único
                                         },
                                         applied_on: chrono::Local::now().naive_local(),
                                     });
@@ -54,6 +54,7 @@ impl super::OneShot {
                             }
                         }
                         ProcessStatus::Running { .. }
+                        | ProcessStatus::PendingInitCmd { .. }
                         | ProcessStatus::Stopping { .. }
                         | ProcessStatus::Stopped { .. } => {}
                     }

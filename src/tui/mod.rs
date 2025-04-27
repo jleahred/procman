@@ -170,29 +170,17 @@ fn render_status<'a>(merged_info: &MergedProcessInfoPerProcess) -> Cell<'a> {
             }
             crate::types::running_status::ProcessStatus::Stopping { .. } => {
                 (Color::Yellow, "stopping".to_string())
-            } // crate::types::running_status::ProcessStatus::Ready2Start { .. } => {
-              //     (Color::Yellow, "ready".to_string())
-              // }
-              // crate::types::running_status::ProcessStatus::PendingHealthStartCheck {
-              //     retries,
-              //     ..
-              // } => (Color::Yellow, format!("health start({})", retries)),
-              // crate::types::running_status::ProcessStatus::Stopping { .. } => {
-              //     (Color::Yellow, "stopping".to_string())
-              // }
-              // crate::types::running_status::ProcessStatus::ScheduledStop { .. } => {
-              //     (Color::Yellow, "scheduled stop".to_string())
-              // }
-              // crate::types::running_status::ProcessStatus::PendingInitCmd { .. } => {
-              //     if merged_info.config_active.is_none() {
-              //         return Cell::from(Span::styled(
-              //             "running init",
-              //             Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
-              //         ));
-              //     } else {
-              //         (Color::Yellow, "running init".to_string())
-              //     }
-              // }
+            }
+            crate::types::running_status::ProcessStatus::PendingInitCmd { .. } => {
+                if merged_info.config_active.is_none() {
+                    return Cell::from(Span::styled(
+                        "pending init",
+                        Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+                    ));
+                } else {
+                    (Color::Yellow, "pending init".to_string())
+                }
+            }
         },
         None => {
             if merged_info.config_active.is_none() {

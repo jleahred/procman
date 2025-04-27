@@ -12,13 +12,16 @@ impl super::OneShot {
                 (_, _, Some(proc_watched)) => match proc_watched.status {
                     ProcessStatus::Stopped | ProcessStatus::ShouldBeRunning => {}
                     ProcessStatus::Running {
-                        pid, procrust_uid, ..
+                        pid, procman_uid, ..
                     }
                     | ProcessStatus::Stopping {
-                        pid, procrust_uid, ..
+                        pid, procman_uid, ..
+                    }
+                    | ProcessStatus::PendingInitCmd {
+                        pid, procman_uid, ..
                     } => match get_signature(pid) {
                         Ok(signature) => {
-                            if signature != procrust_uid {
+                            if signature != procman_uid {
                                 eprintln!(
                                         "[{}] Register Stopped process different signature (not stopping process)",
                                         proc_id.0

@@ -19,7 +19,6 @@ pub(crate) struct RunningStatus {
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub(crate) struct ProcessWatched {
     pub(crate) id: ProcessId,
-    // pub(crate) procrust_uid: String,
     pub(crate) apply_on: NaiveDateTime,
     pub(crate) status: ProcessStatus,
     pub(crate) applied_on: NaiveDateTime,
@@ -30,17 +29,17 @@ pub(crate) enum ProcessStatus {
     ShouldBeRunning,
     Running {
         pid: u32,
-        procrust_uid: String,
+        procman_uid: String,
     },
     Stopping {
         pid: u32,
-        procrust_uid: String,
+        procman_uid: String,
         retries: u32,
         last_attempt: NaiveDateTime,
     },
-    Stopped, // PendingInitCmd {
-             //     pid: u32,
-             //     retries: u32,
-             //     last_attempt: chrono::DateTime<chrono::Local>,
-             // },
+    Stopped,
+    PendingInitCmd {
+        pid: u32,
+        procman_uid: String,
+    },
 }

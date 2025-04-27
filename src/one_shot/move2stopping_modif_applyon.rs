@@ -12,12 +12,10 @@ impl super::OneShot {
                     ProcessStatus::Stopped
                     | ProcessStatus::ShouldBeRunning
                     | ProcessStatus::Stopping { .. } => {}
-                    ProcessStatus::Running {
-                        pid, procrust_uid, ..
-                    } => {
+                    ProcessStatus::Running { pid, procman_uid } => {
                         if process_cfg.apply_on != proc_watched.apply_on {
                             eprintln!(
-                                "[{}] Stopping process different apply on  {} != {}",
+                                "[{}] Stopping running process different apply on  {} != {}",
                                 proc_id.0, process_cfg.apply_on, proc_watched.apply_on
                             );
                             proc_info.process_running = Some(ProcessWatched {
@@ -25,7 +23,26 @@ impl super::OneShot {
                                 apply_on: proc_watched.apply_on,
                                 status: running_status::ProcessStatus::Stopping {
                                     pid,
-                                    procrust_uid,
+                                    procman_uid,
+                                    retries: 0,
+                                    last_attempt: chrono::Local::now().naive_local(),
+                                },
+                                applied_on: chrono::Local::now().naive_local(),
+                            });
+                        }
+                    }
+                    ProcessStatus::PendingInitCmd { pid, procman_uid } => {
+                        if process_cfg.apply_on != proc_watched.apply_on {
+                            eprintln!(
+                                "[{}] Stopping initializing process different apply on  {} != {}",
+                                proc_id.0, process_cfg.apply_on, proc_watched.apply_on
+                            );
+                            proc_info.process_running = Some(ProcessWatched {
+                                id: proc_id.clone(),
+                                apply_on: proc_watched.apply_on,
+                                status: running_status::ProcessStatus::Stopping {
+                                    pid,
+                                    procman_uid,
                                     retries: 0,
                                     last_attempt: chrono::Local::now().naive_local(),
                                 },

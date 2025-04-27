@@ -13,13 +13,18 @@ impl super::OneShot {
                     ProcessStatus::Stopped
                     | ProcessStatus::Running {
                         pid: _,
-                        procrust_uid: _,
+                        procman_uid: _,
                     }
-                    | ProcessStatus::ShouldBeRunning {} => {}
+                    | ProcessStatus::ShouldBeRunning {}
+                    | ProcessStatus::PendingInitCmd {
+                        pid: _,
+                        procman_uid: _,
+                    } => {}
 
+                    //  --------------
                     ProcessStatus::Stopping {
                         pid,
-                        procrust_uid,
+                        procman_uid,
                         retries,
                         last_attempt: _,
                     } => {
@@ -45,7 +50,7 @@ impl super::OneShot {
                             apply_on: proc_watched.apply_on,
                             status: running_status::ProcessStatus::Stopping {
                                 pid,
-                                procrust_uid,
+                                procman_uid,
                                 retries: retries + 1,
                                 last_attempt: chrono::Local::now().naive_local(),
                             },

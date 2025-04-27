@@ -6,7 +6,15 @@ file_format = "0"
 id = "A"
 # command = "podman run -d  --replace --rm --name temp test echo 'hi' && sleep 99999"
 command = "echo 'hi' && sleep 99999"
-apply_on = "2029-11-01T12:00:00"
+apply_on = "2024-11-01T12:00:00"
+
+[process.schedule]
+start_time = "00:00:00"
+stop_time = "23:59:00"
+week_days = ["mon", "wed", "thu", "sun"]
+[process.init_command]
+command = "sleep 4"
+timeout = "5s"
 
 
 [[process]]

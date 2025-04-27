@@ -9,8 +9,7 @@ impl super::OneShot {
                 process.process_running.clone(),
             ) {
                 (proc_id, None, Some(proc_watched)) => match proc_watched.status {
-                    ProcessStatus::Stopped => {}
-                    ProcessStatus::Running { pid, procrust_uid } => {
+                    ProcessStatus::Running { pid, procman_uid } => {
                         println!("[{}] Stopping from running", proc_id.0);
 
                         process.process_running = Some(ProcessWatched {
@@ -18,7 +17,7 @@ impl super::OneShot {
                             apply_on: proc_watched.apply_on,
                             status: running_status::ProcessStatus::Stopping {
                                 pid,
-                                procrust_uid,
+                                procman_uid,
                                 retries: 0,
                                 last_attempt: chrono::Local::now().naive_local(),
                             },
@@ -35,9 +34,25 @@ impl super::OneShot {
                             applied_on: chrono::Local::now().naive_local(),
                         });
                     }
+                    ProcessStatus::PendingInitCmd { pid, procman_uid } => {
+                        println!("[{}] Stopping from init cmd", proc_id.0);
+
+                        process.process_running = Some(ProcessWatched {
+                            id: proc_id.clone(),
+                            apply_on: proc_watched.apply_on,
+                            status: running_status::ProcessStatus::Stopping {
+                                pid,
+                                procman_uid,
+                                retries: 0,
+                                last_attempt: chrono::Local::now().naive_local(),
+                            },
+                            applied_on: chrono::Local::now().naive_local(),
+                        });
+                    }
+                    ProcessStatus::Stopped => {}
                     ProcessStatus::Stopping {
                         pid: _,
-                        procrust_uid: _,
+                        procman_uid: _,
                         retries: _,
                         last_attempt: _,
                     } => {}
