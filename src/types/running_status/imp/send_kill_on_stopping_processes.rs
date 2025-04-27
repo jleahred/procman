@@ -54,8 +54,8 @@ pub(crate) fn send_kill_if_so(
         }),
         ProcessStatus::Running { .. }
         | ProcessStatus::PendingHealthStartCheck { .. }
-        | ProcessStatus::Ready2Start { .. } |
-        ProcessStatus::PendingInitCmd { .. } => Ok(proc_watched.clone()),
+        | ProcessStatus::Ready2Start { .. }
+        | ProcessStatus::PendingInitCmd { .. } => Ok(proc_watched.clone()),
     }
 }
 

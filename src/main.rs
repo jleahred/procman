@@ -9,12 +9,25 @@ use std::process::Command;
 use std::time::Duration;
 use std::{env, thread};
 
+// run supervised
+// use std::process::{Child};
+// use std::{io};
+// use nix::libc;
+// use std::os::unix::process::CommandExt;
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() == 3 && args[1] == "--one-shot" {
         one_shot::one_shot(&args[2]);
         return;
     }
+    // else if args.len() == 3 && args[1] == "--supervise" {
+    //     run_supervised(&args[2]).unwrap_or_else(|err| {
+    //         eprintln!("CRITIC: {}", err);
+    //         std::process::exit(1);
+    //     });
+    //     return;
+    // }
 
     let cli_params = cli_params::parse();
 
@@ -71,3 +84,36 @@ fn run_in_loop(prc_cfg_file_name: &str) {
         }
     }
 }
+
+
+// fn run_supervised(
+//     command: &str,
+// ) -> Result<u32, io::Error> {
+//     unsafe {
+//     let mut child: Child = Command::new("sh")
+//         .arg("-c")
+//         .arg(&command)
+//         .pre_exec(|| {
+//             // PR_SET_PDEATHSIG = 1
+//             // SIGKILL = 9
+//             if libc::prctl(libc::PR_SET_PDEATHSIG, libc::SIGKILL) != 0 {
+//                 return Err(std::io::Error::last_os_error());
+//             }
+//             Ok(())
+//         })
+//         .env("PROCMAN", &command)
+//         .spawn()?;
+        
+//         //  todo: convendría desconectar la salida de error y la salida estándar para evitar zombis?
+
+//         println!("New SUPERVISED process created with PID: {}", child.id());
+
+//         if child.wait().is_err() {
+//             eprintln!("Error waiting for child process");
+//         } else {
+//             println!("supervised finished OK");
+//         }
+
+//     Ok(child.id())
+//     }
+// }
