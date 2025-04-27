@@ -3,6 +3,8 @@
 
 ## TODO
 
+* tipo de servicio adicional para podman run detatch
+* renonbrar los running por watched
 * revisar varios ficheros en paralelo (no en tui)
 * eliminar los println! y eprintln! centralizar (afecta al tui)
 * log con tiempo ejecución oneshot
@@ -22,7 +24,6 @@
         * stop
         * ...
 * logs
-* StartHealthCheck, it too many retries, reset the service
 * commands arguments
     * debug
     * ...
@@ -83,12 +84,12 @@ week_days = ["mon", "wed", "thu", "sun"] # optional
 
 [process.init_command]
 command = "ls"
-timeout = { secs = 30, nanos = 0 }        # optional
+timeout = "30s"   # optional
 
 
-[process.start_health_check] # optional
-command = "curl -I http://localhost:8080"
-timeout = { secs = 30, nanos = 0 }        # optional
+[process.init_command]  # optional
+command = "sleep 4"
+timeout = "5s"   # optional
 ```
 
 ### Example of a process configuration 2
@@ -98,7 +99,7 @@ timeout = { secs = 30, nanos = 0 }        # optional
 id = "example_process 2"
 command = "echo 'Starting process...'"
 apply_on = "2024-10-01T12:00:00"
-start_health_check = { command = "curl -I http://localhost:8080", timeout = { secs = 30, nanos = 0 } }
+init_command = { command = "curl -I http://localhost:8080", timeout = "5s" }
 schedule = { start_time = "08:00:00", stop_time = "18:00:00", week_days = [
     "mon",
     "tue",
@@ -138,9 +139,6 @@ Once the process is running, it may be necessary to execute some initialization 
 
 The process will not be marked as "running" until this command has successfully finished
 
-#### process.start_health_check
-
-Before considering the process as "running" and therefore before `init_command`, you have the opportunity to run a command to perform checks (connecting to a port, opening a file...)
 
 ### Change only the command...
 
@@ -220,30 +218,28 @@ Circular references (and self references a a specific case) will be detected on 
 Also it will check horphan references
 
 
+
+
 ## Watched ProcessStatus
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Ready2Start
-    Ready2Start --> PendingHelthCheckStart: ok
-    PendingHelthCheckStart --> PedingInitCmd
-    PedingInitCmd  -->  Running
-    Running --> ScheduledStop
-    ScheduledStop --> Stopping: send kill
-    Stopping --> [*]: pid gone
+    [*] --> ShouldBeRunning: cfg_actived_not_watched
+    ShouldBeRunning --> PendingInitCmd
+    PendingInitCmd --> Running: init ok
+    Running --> Stopping: modif_applyon/not_active_cfg
+    Stopping --> Stopped: pid gone
+    Stopped --> [*]
+
+    Stopped --> ShouldBeRunning: cfg activated
+    Running --> Stopped: modif_signature
+    Stopping --> Stopped: modif_signature
+    ShouldBeRunning --> Stopped: not pid in system
+    Running --> Stopped: not pid in system
+    Stopping --> Stopping: retry
 ```
 
 
-## Check start health
-
-
-If you configure start_health_check command, the system will not mark the process as running until the command completes successfully.
-
-```toml
-[process.start_health_check] 
-command = "curl -I http://localhost:8080"
-timeout = { secs = 2, nanos = 0 }        # optional
-```
 
 ## TUI
 
