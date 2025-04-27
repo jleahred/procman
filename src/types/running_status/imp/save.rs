@@ -19,9 +19,9 @@ pub(crate) fn save(mut run_status: RunningStatus, file_path: &str) -> RunningSta
     if last_saved.0 == run_status.processes {
         if let Some(last_saved_time) = last_saved.1 {
             if (now - last_saved_time).num_seconds() <= 5 {
-                println!(
-                    "No changes detected in RunningStatus and last save was recent, skipping save."
-                );
+                // println!(
+                //     "No changes detected in RunningStatus and last save was recent, skipping save."
+                // );
                 return run_status;
             }
         }
