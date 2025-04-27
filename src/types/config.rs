@@ -79,12 +79,14 @@ pub(crate) enum ProcessType {
     Fake,
 }
 
+pub(crate) struct ActiveProcessByConfig(pub(crate) HashMap<ProcessId, ProcessConfig>);
+
 impl Config {
     pub(crate) fn check(&self) -> Result<(), String> {
         imp::check(&self)
     }
 
-    pub(crate) fn get_active_procs_by_config(&self) -> Vec<ProcessConfig> {
+    pub(crate) fn get_active_procs_by_config(&self) -> ActiveProcessByConfig {
         imp::get_active_procs_by_config(&self)
     }
 }

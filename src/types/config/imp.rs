@@ -83,7 +83,7 @@ pub(super) fn matches(ds: &DaySelection, weekday: chrono::Weekday) -> bool {
     }
 }
 
-pub(super) fn get_active_procs_by_config(config: &Config) -> Vec<ProcessConfig> {
+pub(super) fn get_active_procs_by_config(config: &Config) -> ActiveProcessByConfig {
     let now = Local::now().naive_local();
     let mut process_map: HashMap<ProcessId, ProcessConfig> = HashMap::new();
 
@@ -123,7 +123,7 @@ pub(super) fn get_active_procs_by_config(config: &Config) -> Vec<ProcessConfig> 
         }
     }
 
-    process_map.values().cloned().collect()
+    ActiveProcessByConfig(process_map)
 }
 
 //  --------------------

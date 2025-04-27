@@ -1,0 +1,16 @@
+uid = "550e8400-e29b-41d4-a716-4466554400001"
+file_format = "0"
+
+
+[[process]]
+id = "A"
+# command = "podman run -d  --replace --rm --name temp test echo 'hi' && sleep 99999"
+command = "echo 'hi' && sleep 99999"
+apply_on = "2029-11-01T12:00:00"
+
+
+[[process]]
+id = "B"
+command = "sleep 121212"
+apply_on = "2024-10-01T12:00:00"
+depends_on = ["A"]

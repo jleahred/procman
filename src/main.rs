@@ -104,7 +104,7 @@ fn run_in_loop(prc_cfg_file_name: &str) {
 //         .env("PROCMAN", &command)
 //         .spawn()?;
         
-//         //  todo: convendría desconectar la salida de error y la salida estándar para evitar zombis?
+//         //  todo convendría desconectar la salida de error y la salida estándar para evitar zombis?
 
 //         println!("New SUPERVISED process created with PID: {}", child.id());
 

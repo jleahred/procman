@@ -1,24 +1,28 @@
-pub(crate) mod check_start_held_processes;
-pub(crate) mod del_if_missing_pid;
-pub(crate) mod get_running_ids;
-pub(crate) mod get_watched_ids;
-pub(crate) mod launch_ready2start;
-pub(crate) mod load_running_status;
-pub(crate) mod mark_stopping_if_apply_on_changed;
-pub(crate) mod mark_stopping_not_active_in_cfg;
-pub(crate) mod ready2start_from_missing_watched;
-pub(crate) mod save;
-pub(crate) mod send_kill_on_stopping_processes;
-pub(crate) mod run_init_cmds;
+use crate::types::config::ConfigUid;
+use crate::types::running_status::RunningStatus;
+use std::collections::HashMap;
+use std::fs;
+use std::path::Path;
 
-pub(crate) use check_start_held_processes::check_start_held_processes;
-pub(crate) use del_if_missing_pid::del_if_missing_pid;
-pub(crate) use get_running_ids::get_running_ids;
-pub(crate) use get_watched_ids::get_watched_ids;
-pub(crate) use launch_ready2start::launch_ready2start;
-pub(crate) use mark_stopping_if_apply_on_changed::mark_stopping_if_apply_on_changed;
-pub(crate) use mark_stopping_not_active_in_cfg::mark_stopping_not_active_in_cfg;
-pub(crate) use ready2start_from_missing_watched::ready2start_from_missing_watched;
-pub(crate) use save::save;
-pub(crate) use send_kill_on_stopping_processes::send_kill_on_stopping_processes;
-pub(crate) use run_init_cmds::run_init_cmds;
+pub(crate) fn load_running_status(file_path: &str, file_uid: &ConfigUid) -> RunningStatus {
+    let full_path = format!("{}/{}.toml", file_path, file_uid.0); // Construir la ruta completa
+
+    if Path::new(&full_path).exists() {
+        let content = fs::read_to_string(&full_path)
+            .unwrap_or_else(|err| panic!("Failed to read file {}: {}", full_path, err));
+        toml::from_str(&content)
+            .unwrap_or_else(|err| panic!("Failed to parse TOML from file {}: {}", full_path, err))
+    } else {
+        // println!(
+        //     "File {} does not exist. Returning default RunningStatus.",
+        //     full_path
+        // );
+        RunningStatus {
+            // persist_path: file_path.to_owned(),
+            file_uid: file_uid.clone(),
+            _file_format: String::from("0"),
+            processes: HashMap::new(),
+            last_update: chrono::Local::now().naive_local(),
+        }
+    }
+}

@@ -2,41 +2,84 @@ mod imp;
 
 use crate::read_config_file::read_config_file_or_panic;
 use crate::types::config::Config;
-use crate::types::running_status;
+use crate::types::config::ProcessId;
+use crate::types::config::{ConfigUid, ProcessConfig};
+use crate::types::running_status::load_running_status;
+use crate::types::running_status::ProcessWatched;
+use std::collections::HashMap;
 
 const RUNNING_STATUS_FOLDER: &str = "/tmp/procman";
 
-pub(crate) fn one_shot(full_file_name: &str) {
+pub(crate) fn one_shot(full_config_filename: &str) {
     println!("\n--------------------------------------------------------------------------------");
     println!("Checking... {}\n", chrono::Local::now());
 
-    let config: Config = read_config_file_or_panic(full_file_name);
-    let running_status = running_status::load_running_status(RUNNING_STATUS_FOLDER, &config.uid);
-    let active_procs_by_config = config.get_active_procs_by_config();
-    let running_ids = running_status.get_running_ids();
-    let whatched_ids = running_status.get_watched_ids();
-    let active_procs_cfg_all_depends_running =
-        imp::filter_active_procs_by_config_with_running(&active_procs_by_config, &running_ids);
-    let pending2watch =
-        imp::get_pending2run_processes(&active_procs_cfg_all_depends_running, &whatched_ids);
+    OneShot::create(&full_config_filename)
+    .filter_config_by_dependencies()
+    .cfg_actived_not_in_watched()
+    .stopped_with_active_cfg()
+    .launch_process()
+    .not_actived_config()
+    .try_stop()
+    .move2stop_pid_missing_on_system()
+    .move2stop_modif_signature()
+    .move2stopping_modif_applyon()
+    // .run_init()  todo:0
+    // .save()
+    ;
+}
 
-    //  --------------------
+#[derive(Debug)]
+pub(crate) struct OneShot {
+    persist_path: String,
+    pub(crate) file_uid: ConfigUid,
+    pub(crate) _file_format: String,
+    pub(crate) processes: HashMap<ProcessId, OneShotProcInfo>,
+}
 
-    running_status
-        .del_if_missing_pid()
-        .save(RUNNING_STATUS_FOLDER)
-        .send_kill_on_stopping_processes()
-        .save(RUNNING_STATUS_FOLDER)
-        .run_init_cmds()
-        .save(RUNNING_STATUS_FOLDER)
-        .check_start_held_processes()
-        .save(RUNNING_STATUS_FOLDER)
-        .mark_stopping_not_active_in_cfg(&active_procs_cfg_all_depends_running)
-        .save(RUNNING_STATUS_FOLDER)
-        .mark_stopping_if_apply_on_changed(&active_procs_by_config)
-        .save(RUNNING_STATUS_FOLDER)
-        .ready2start_from_missing_watched(&pending2watch)
-        .save(RUNNING_STATUS_FOLDER)
-        .launch_ready2start()
-        .save(RUNNING_STATUS_FOLDER);
+#[derive(Clone, Debug)]
+pub(crate) struct OneShotProcInfo {
+    process_config: Option<ProcessConfig>,
+    process_running: Option<ProcessWatched>,
+}
+
+impl OneShot {
+    fn create(full_config_filename: &str) -> Self {
+        let config: Config = read_config_file_or_panic(full_config_filename);
+        let running_status = load_running_status(RUNNING_STATUS_FOLDER, &config.uid);
+        let active_procs_by_config = config.get_active_procs_by_config();
+
+        let mut result = Self {
+            persist_path: RUNNING_STATUS_FOLDER.to_string(),
+            file_uid: config.uid,
+            _file_format: "0".to_string(),
+            processes: HashMap::new(),
+        };
+
+        for (process_id, process_config) in active_procs_by_config.0 {
+            result.processes.insert(
+                process_id,
+                OneShotProcInfo {
+                    process_config: Some(process_config),
+                    process_running: None,
+                },
+            );
+        }
+
+        for (process_id, process_watched) in running_status.processes {
+            if let Some(proc_info) = result.processes.get_mut(&process_id) {
+                proc_info.process_running = Some(process_watched);
+            } else {
+                result.processes.insert(
+                    process_id,
+                    OneShotProcInfo {
+                        process_config: None,
+                        process_running: Some(process_watched),
+                    },
+                );
+            }
+        }
+
+        result
+    }
 }

@@ -162,29 +162,37 @@ fn render_status<'a>(merged_info: &MergedProcessInfoPerProcess) -> Cell<'a> {
                 }
                 (Color::Green, "running".to_string())
             }
-            crate::types::running_status::ProcessStatus::Ready2Start { .. } => {
-                (Color::Yellow, "ready".to_string())
+            crate::types::running_status::ProcessStatus::ShouldBeRunning { .. } => {
+                (Color::Yellow, "should be running".to_string())
             }
-            crate::types::running_status::ProcessStatus::PendingHealthStartCheck {
-                retries,
-                ..
-            } => (Color::Yellow, format!("health start({})", retries)),
+            crate::types::running_status::ProcessStatus::Stopped { .. } => {
+                (Color::Yellow, "stopped".to_string())
+            }
             crate::types::running_status::ProcessStatus::Stopping { .. } => {
                 (Color::Yellow, "stopping".to_string())
-            }
-            crate::types::running_status::ProcessStatus::ScheduledStop { .. } => {
-                (Color::Yellow, "scheduled stop".to_string())
-            }
-            crate::types::running_status::ProcessStatus::PendingInitCmd { .. } => {
-                if merged_info.config_active.is_none() {
-                    return Cell::from(Span::styled(
-                        "running init",
-                        Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
-                    ));
-                } else {
-                    (Color::Yellow, "running init".to_string())
-                }
-            }
+            } // crate::types::running_status::ProcessStatus::Ready2Start { .. } => {
+              //     (Color::Yellow, "ready".to_string())
+              // }
+              // crate::types::running_status::ProcessStatus::PendingHealthStartCheck {
+              //     retries,
+              //     ..
+              // } => (Color::Yellow, format!("health start({})", retries)),
+              // crate::types::running_status::ProcessStatus::Stopping { .. } => {
+              //     (Color::Yellow, "stopping".to_string())
+              // }
+              // crate::types::running_status::ProcessStatus::ScheduledStop { .. } => {
+              //     (Color::Yellow, "scheduled stop".to_string())
+              // }
+              // crate::types::running_status::ProcessStatus::PendingInitCmd { .. } => {
+              //     if merged_info.config_active.is_none() {
+              //         return Cell::from(Span::styled(
+              //             "running init",
+              //             Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+              //         ));
+              //     } else {
+              //         (Color::Yellow, "running init".to_string())
+              //     }
+              // }
         },
         None => {
             if merged_info.config_active.is_none() {
@@ -288,8 +296,9 @@ fn get_process_info_merged(
 
     let map_proc_id_active_cfg: BTreeMap<ProcessId, ProcessConfig> = config
         .get_active_procs_by_config()
-        .into_iter()
-        .map(|process| (process.id.clone(), process))
+        .0
+        .values()
+        .map(|process| (process.id.clone(), process.clone()))
         .collect();
 
     for (proc_id, process) in map_proc_id_active_cfg.iter() {
