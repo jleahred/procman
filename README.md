@@ -3,6 +3,8 @@
 
 ## TODO
 
+* añadir templates
+* read_config_file_or_panic quitar el panic
 * rename running for watched when pertinent
     * running_status
     * process_running

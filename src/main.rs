@@ -9,6 +9,8 @@ use std::process::Command;
 use std::time::Duration;
 use std::{env, thread};
 
+use types::config::Config;
+
 // run supervised
 // use std::process::{Child};
 // use std::{io};
@@ -18,7 +20,10 @@ use std::{env, thread};
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() == 3 && args[1] == "--one-shot" {
-        one_shot::one_shot(&args[2]);
+        if let Err(err) = one_shot::one_shot(&args[2]) {
+            eprintln!("CRITIC: canceling check   {}", err);
+            std::process::exit(1);
+        }
         return;
     }
     // else if args.len() == 3 && args[1] == "--supervise" {
@@ -33,7 +38,11 @@ fn main() {
 
     match cli_params.command {
         cli_params::Commands::Run { processes_filename } => {
-            let config = read_config_file::read_config_file_or_panic(&processes_filename);
+            let config = Config::read_from_file(&processes_filename).unwrap_or_else(|err| {
+                eprintln!("CRITIC: Failed to read config file: {}", err.0);
+                std::process::exit(1);
+            });
+            // read_config_file::read_config_file_or_panic(&processes_filename);
             let locked =
                 check_run_once::check(&format!("{}.lock", config.uid.0)).unwrap_or_else(|err| {
                     eprintln!("CRITIC: {}", err);
@@ -46,7 +55,10 @@ fn main() {
         }
         cli_params::Commands::Check { processes_filename } => {
             println!("Checking: {}", processes_filename);
-            let _ = read_config_file::read_config_file_or_panic(&processes_filename);
+            let _ = Config::read_from_file(&processes_filename).unwrap_or_else(|err| {
+                eprintln!("CRITIC: Failed to read config file: {}", err.0);
+                std::process::exit(1);
+            });
             println!("Check config OK: {}", processes_filename);
         }
         cli_params::Commands::Uid => {

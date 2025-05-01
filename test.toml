@@ -1,38 +1,65 @@
 uid = "550e8400-e29b-41d4-a716-4466554400001"
 file_format = "0"
 
+# templates = [ "templates.toml" ]
+
 
 [[process]]
 id = "A"
+
+[process.template]
+name = "PODMAN"
+container_name = "test"
+image = "docker.io/ubuntu:24.04"
+command = "sleep 444"
+
+
 # command = "podman run -d  --replace --rm --name temp test echo 'hi' && sleep 99999"
-command = "echo 'hi' && sleep 99999"
-apply_on = "2029-11-01T12:00:00"
+# apply_on = "2024-11-01T12:00:00"
+# command = "podman run --init --rm --name test docker.io/ubuntu:24.04 sleep 4444"
+# before = "podman stop -t4 test ||  true   &&  podman rm -f test"
+# health_check = "[ \"$(podman inspect --format '{{.State.Status}}' test)\" = \"running\" ]"
+# stop = "podman stop -t4 test ||  true   &&  podman rm -f test"
 
-[process.schedule]
-start_time = "00:00:00"
-stop_time = "23:59:00"
-week_days = ["mon", "wed", "thu", "sun"]
-[process.init_command]
-command = "sleep 4"
-timeout = "5s"
-
-
-[[process]]
-id = "B"
-command = "sleep 121212"
-apply_on = "2029-10-01T12:00:00"
-depends_on = ["A"]
-
-
-[[process]]
-id = "example_process podman detached"
-command = "podman run -d --replace --rm --name=test incubator_tini sleep 1122"
-apply_on = "2024-10-01T12:00:00"
-type = "podman_cid"
+# [[process]]
+# id = "A"
+# # command = "podman run -d  --replace --rm --name temp test echo 'hi' && sleep 99999"
+# command = "echo 'hi' && sleep 99999"
+# apply_on = "2029-11-01T12:00:00"
+#
+# [process.schedule]
+# start_time = "00:00:00"
+# stop_time = "23:59:00"
+# week_days = ["mon", "wed", "thu", "sun"]
+# [process.init_command]
+# command = "sleep 4"
+# timeout = "5s"
 
 
-[[process]]
-id = "podman exec test sleep 5566"
-command = "podman exec test sleep 5566"
-apply_on = "2029-10-01T12:00:00"
+# [[process]]
+# id = "B"
+# command = "sleep 121212"
+# apply_on = "2029-10-01T12:00:00"
+# depends_on = ["A"]
 
+
+# [[process]]
+# id = "example_process podman detached"
+# command = "podman run -d --replace --rm --name=test incubator_tini sleep 1122"
+# apply_on = "2024-10-01T12:00:00"
+# type = "podman_cid"
+#
+#
+# [[process]]
+# id = "podman exec test sleep 5566"
+# command = "podman exec test sleep 5566"
+# apply_on = "2029-10-01T12:00:00"
+
+
+
+# template...
+# image: docker.io/ubuntu:24.04, name = test, command = sleep 444
+# command = "podman run --init --rm --name   $NAME  $IMAGE  $COMMAND"
+# before = "podman stop -t4   $NAME  ||  true   &&  podman rm -f  $NAME"
+# health_check = "[ \"$(podman inspect --format '{{.State.Status}}' $NAME)\" = \"running\" ]"
+# stop = "podman stop -t4  $NAME ||  true   &&  podman rm -f  $NAME"

@@ -17,11 +17,11 @@ use crate::types::config::{ConfigUid, ProcessConfig};
 use crate::types::running_status::ProcessWatched;
 use std::collections::HashMap;
 
-pub(crate) fn one_shot(full_config_filename: &str) {
+pub(crate) fn one_shot(full_config_filename: &str) -> Result<(), String> {
     println!("\n--------------------------------------------------------------------------------");
     println!("Checking... {}\n", chrono::Local::now());
 
-    OneShot::create(&full_config_filename)
+    OneShot::create(&full_config_filename)?
         .filter_config_by_dependencies()
         .cfg_actived_not_in_watched()
         .stopped_with_active_cfg()
@@ -34,6 +34,7 @@ pub(crate) fn one_shot(full_config_filename: &str) {
         .run_init_cmd()  
         // .save()
         ;
+    Ok(())
 }
 
 #[derive(Debug)]

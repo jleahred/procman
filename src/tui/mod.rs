@@ -59,8 +59,18 @@ pub(crate) fn run(cfg_file_name: &str) -> Result<(), Box<dyn std::error::Error>>
                     .split(f.size());
 
                 // tabla de procesos
+                let merged_process_info: BTreeMap<ProcessId, MergedProcessInfoPerProcess> =
+                    match status {
+                        Ok(ref s) => s.merged_process_info.clone(),
+                        Err(_) => BTreeMap::new(),
+                    };
+
+                let cfg_file_name = match &status {
+                    Ok(ref s) => &s.cfg_file_name,
+                    Err(_) => &format!("error reading config file {}", cfg_file_name),
+                };
                 f.render_widget(
-                    render_table(&status.cfg_file_name, &status.merged_process_info),
+                    render_table(&cfg_file_name, &merged_process_info),
                     chunks[0],
                 );
 
@@ -228,6 +238,8 @@ struct Status {
     cfg_file_name: String,
     merged_process_info: BTreeMap<ProcessId, MergedProcessInfoPerProcess>,
 }
+
+#[derive(Clone)]
 struct MergedProcessInfoPerProcess {
     process_id: ProcessId,
     in_config: bool,
@@ -235,20 +247,22 @@ struct MergedProcessInfoPerProcess {
     running: Option<crate::types::running_status::ProcessWatched>,
 }
 
-fn get_status(cfg_file_name: &str) -> Status {
+fn get_status(cfg_file_name: &str) -> Result<Status, String> {
     let relative_path = Path::new(cfg_file_name);
     let absolute_path = fs::canonicalize(&relative_path).expect("Failed to get absolute path");
-    Status {
+    Ok(Status {
         cfg_file_name: absolute_path.display().to_string(),
-        merged_process_info: get_process_info(cfg_file_name),
-    }
+        merged_process_info: get_process_info(cfg_file_name)?,
+    })
 }
 
-fn get_process_info(cfg_file_name: &str) -> BTreeMap<ProcessId, MergedProcessInfoPerProcess> {
-    let cfg = read_config_file::read_config_file_or_panic(&cfg_file_name); //  todo:0
+fn get_process_info(
+    cfg_file_name: &str,
+) -> Result<BTreeMap<ProcessId, MergedProcessInfoPerProcess>, String> {
+    let cfg = Config::read_from_file(&cfg_file_name).map_err(|e| e.0.to_string())?; //  todo:0
     let running_status =
         crate::types::running_status::load_running_status("/tmp/procman/", &cfg.uid);
-    get_process_info_merged(&cfg, &running_status.processes)
+    Ok(get_process_info_merged(&cfg, &running_status.processes))
 }
 
 fn get_process_info_merged(

@@ -1,0 +1,7 @@
+
+[templates]
+name = "PODMAN"
+command = "podman run --init --rm --name {{ name }} {{ image }} {{ command }}"
+before = "podman stop -t4   {{ name }}  ||  true   &&  podman rm -f  {{ name }}"
+health_check = "[ \"$(podman inspect --format '{{ '{{.State.Status}}' }}' {{ name }})\" = \"running\" ]"
+stop = "podman stop -t4 {{ name }} || true && podman rm -f {{ name }}"

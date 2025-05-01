@@ -7,6 +7,17 @@ use std::collections::HashMap;
 #[cfg(test)]
 mod tests;
 
+#[derive(Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct Config {
+    pub(crate) uid: ConfigUid,
+    #[serde(rename = "file_format")]
+    pub(crate) _file_format: String,
+    pub(crate) process: Vec<ProcessConfig>,
+}
+
+pub(crate) struct ConfigError(pub(crate) String);
+
 /// process identification
 /// it's a unique string to identify a process to watch
 #[derive(Deserialize, Serialize, PartialEq, Eq, Hash, PartialOrd, Ord, Clone, Debug)]
@@ -25,15 +36,6 @@ pub(crate) struct CommandInit {
     pub(crate) command: Command,
     #[serde(with = "humantime_serde")]
     pub(crate) timeout: Option<std::time::Duration>,
-}
-
-#[derive(Deserialize, Debug)]
-#[serde(deny_unknown_fields)]
-pub(crate) struct Config {
-    pub(crate) uid: ConfigUid,
-    #[serde(rename = "file_format")]
-    pub(crate) _file_format: String,
-    pub(crate) process: Vec<ProcessConfig>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -80,8 +82,8 @@ pub(crate) enum ProcessType {
 pub(crate) struct ActiveProcessByConfig(pub(crate) HashMap<ProcessId, ProcessConfig>);
 
 impl Config {
-    pub(crate) fn check(&self) -> Result<(), String> {
-        imp::check(&self)
+    pub(crate) fn check(self) -> Result<Self, ConfigError> {
+        imp::check(self)
     }
 
     pub(crate) fn get_active_procs_by_config(&self) -> ActiveProcessByConfig {
@@ -96,9 +98,9 @@ impl Default for ProcessType {
 }
 
 impl ProcessConfig {
-    pub(crate) fn check_config(&self) -> Result<(), String> {
+    pub(crate) fn check_config(&self) -> Result<(), ConfigError> {
         if self.command.0.is_empty() {
-            return Err("Command cannot be empty".to_string());
+            return Err(ConfigError("Command cannot be empty".to_string()));
         }
         imp::is_valid_start_stop(self)
     }

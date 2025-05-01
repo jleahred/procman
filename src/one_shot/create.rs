@@ -1,4 +1,4 @@
-use crate::read_config_file::read_config_file_or_panic;
+// use crate::read_config_file::read_config_file_or_panic;
 use crate::types::config::Config;
 use crate::types::running_status::load_running_status;
 use std::collections::HashMap;
@@ -8,8 +8,9 @@ use super::OneShotProcInfo;
 const RUNNING_STATUS_FOLDER: &str = "/tmp/procman";
 
 impl super::OneShot {
-    pub(super) fn create(full_config_filename: &str) -> Self {
-        let config: Config = read_config_file_or_panic(full_config_filename);
+    pub(super) fn create(full_config_filename: &str) -> Result<Self, String> {
+        let config: Config =
+            Config::read_from_file(full_config_filename).map_err(|e| e.0.to_string())?;
         let running_status = load_running_status(RUNNING_STATUS_FOLDER, &config.uid);
         let active_procs_by_config = config.get_active_procs_by_config();
 
@@ -44,6 +45,6 @@ impl super::OneShot {
             }
         }
 
-        result
+        Ok(result)
     }
 }

@@ -1,34 +1,65 @@
 use super::*;
 
+use crate::types::config::Config;
 use chrono::Weekday;
 use serde::de::{Deserializer, SeqAccess, Visitor};
 use serde::Deserialize;
 use std::fmt;
+use std::fs;
+use toml;
 
-pub(super) fn check(cfg: &Config) -> Result<(), String> {
+impl Config {
+    pub(crate) fn read_from_file(file_path: &str) -> Result<Config, ConfigError> {
+        let content = fs::read_to_string(file_path).map_err(|err| {
+            ConfigError(format!("Failed to read TOML file '{}': {}", file_path, err))
+        })?;
+        let config: Config = toml::from_str(&content).map_err(|err| {
+            ConfigError(format!(
+                "Failed to parse TOML content at '{}': {}",
+                file_path, err
+            ))
+        })?;
+
+        config.check()
+
+        // let content = fs::read_to_string(file_path).unwrap_or_else(|err| {
+        //     panic!("Failed to read the TOML file at '{}': {}", file_path, err);
+        // });
+
+        // let config: Config = toml::from_str(&content).unwrap_or_else(|err| {
+        //     panic!("Failed to parse the TOML file at '{}': {}", file_path, err);
+        // });
+        // config.check().unwrap_or_else(|err| {
+        //     panic!("Configuration error: {}", err);
+        // });
+        // Ok(config)
+    }
+}
+
+pub(super) fn check(cfg: Config) -> Result<Config, ConfigError> {
     if cfg.uid.0.is_empty() {
-        return Err("UID cannot be empty".to_string());
+        return Err(ConfigError("UID cannot be empty".to_string()));
     }
     if cfg.process.is_empty() {
-        return Err("Process list cannot be empty".to_string());
+        return Err(ConfigError("Process list cannot be empty".to_string()));
     }
     for process in &cfg.process {
         process.check_config()?;
     }
-    depends_exists(cfg)?;
-    circular_refs(cfg)?;
-    Ok(())
+    depends_exists(&cfg)?;
+    circular_refs(&cfg)?;
+    Ok(cfg)
 }
 
-pub(super) fn is_valid_start_stop(proc_conf: &ProcessConfig) -> Result<(), String> {
+pub(super) fn is_valid_start_stop(proc_conf: &ProcessConfig) -> Result<(), ConfigError> {
     if let Some(schedule) = &proc_conf.schedule {
         if schedule.start_time < schedule.stop_time {
             Ok(())
         } else {
-            Err(format!(
+            Err(ConfigError(format!(
                 "Invalid time range: start_time ({}) is not before stop_time ({})",
                 schedule.start_time, schedule.stop_time
-            ))
+            )))
         }
     } else {
         Ok(()) // If no schedule is defined, consider it valid
@@ -106,7 +137,7 @@ pub(super) fn get_active_procs_by_config(config: &Config) -> ActiveProcessByConf
         }
 
         match process.process_type {
-            ProcessType::Normal | ProcessType::PodmanCid  => {}
+            ProcessType::Normal | ProcessType::PodmanCid => {}
             ProcessType::Fake => {
                 // println!("[{}] Process type is fake, skipping...", process.id.0);
                 continue;
@@ -127,16 +158,16 @@ pub(super) fn get_active_procs_by_config(config: &Config) -> ActiveProcessByConf
 }
 
 //  --------------------
-fn depends_exists(cfg: &Config) -> Result<(), String> {
+fn depends_exists(cfg: &Config) -> Result<(), ConfigError> {
     let process_ids: std::collections::HashSet<_> = cfg.process.iter().map(|p| &p.id).collect();
 
     for process in &cfg.process {
         for dependency in &process.depends_on {
             if !process_ids.contains(&dependency) {
-                return Err(format!(
+                return Err(ConfigError(format!(
                     "Process '{}' depends on non-existent process '{}'",
                     process.id.0, dependency.0
-                ));
+                )));
             }
         }
     }
@@ -144,7 +175,7 @@ fn depends_exists(cfg: &Config) -> Result<(), String> {
     Ok(())
 }
 
-fn circular_refs(cfg: &Config) -> Result<(), String> {
+fn circular_refs(cfg: &Config) -> Result<(), ConfigError> {
     fn has_cycle(
         process_id: &ProcessId,
         visited: &mut std::collections::HashSet<ProcessId>,
@@ -180,10 +211,10 @@ fn circular_refs(cfg: &Config) -> Result<(), String> {
 
     for process in &cfg.process {
         if has_cycle(&process.id, &mut visited, &mut stack, &processes) {
-            return Err(format!(
+            return Err(ConfigError(format!(
                 "Circular dependency detected involving process '{}'",
                 process.id.0
-            ));
+            )));
         }
     }
 
