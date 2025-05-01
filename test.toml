@@ -9,7 +9,7 @@ id = "A"
 apply_on = "2029-11-01T12:00:00"
 
 [process.template]
-template = "PROCESS PODMAN"
+template = "PODMAN"
 container_name = "test_a"
 image = "docker.io/ubuntu:24.04"
 command = "sleep 444"
@@ -20,11 +20,10 @@ id = "B"
 apply_on = "2029-11-01T12:00:00"
 
 [process.template]
-template = "PROCESS PODMAN"
+template = "PODMAN"
 container_name = "test_b"
 image = "docker.io/ubuntu:24.04"
 command = "sleep 555"
-
 
 # command = "podman run -d  --replace --rm --name temp test echo 'hi' && sleep 99999"
 # apply_on = "2024-11-01T12:00:00"
@@ -82,3 +81,13 @@ command = "sleep 555"
 # before = "podman stop -t4 {{ name }} || true && podman rm -f {{ name }}"
 # health_check = "[ \"$(podman inspect --format '{{ '{{.State.Status}}' }}' {{ name }})\" = \"running\" ]"
 # stop = "podman stop -t4 {{ name }} || true && podman rm -f {{ name }}"
+
+
+[[template]]
+name = "PODMAN"
+template = '''
+command = "podman run --init --rm --name {{ container_name }} {{ image }} {{ command }}"
+# before = "podman stop -t4 {{ container_name }} || true && podman rm -f {{ container_name }}"
+# health_check = "[ \"$(podman inspect --format '{{ '{{.State.Status}}' }}' {{ container_name }})\" = \"running\" ]"
+# stop = "podman stop -t4 {{ container_name }} || true && podman rm -f {{ container_name }}"
+'''

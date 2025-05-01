@@ -3,7 +3,7 @@ mod expand_template;
 use super::*;
 use crate::types::config::Config;
 use chrono::Weekday;
-use expand_template::Expanded;
+use expand_template::{expand_template, Expanded};
 use serde::de::{Deserializer, SeqAccess, Visitor};
 use serde::Deserialize;
 use std::fmt;
@@ -16,17 +16,34 @@ impl Config {
             ConfigError(format!("Failed to read TOML file '{}': {}", file_path, err))
         })?;
 
-        let todo0_template_str = r#"
-# image = "{{ image }}"
-# container_name = "{{ container_name }}"
-# command = "{{ command }}"
+        let parsed_toml: toml::Value = toml::from_str(&content).map_err(|err| {
+            ConfigError(format!(
+                "Failed to parse TOML file '{}': {}",
+                file_path, err
+            ))
+        })?;
 
-command = "podman run --init --rm --name {{ container_name }} {{ image }} {{ command }}"
-before = "podman stop -t4 {{ container_name }} || true && podman rm -f {{ container_name }}"
-health_check = "[ \"$(podman inspect --format '{{ '{{.State.Status}}' }}' {{ container_name }})\" = \"running\" ]"
-stop = "podman stop -t4 {{ container_name }} || true && podman rm -f {{ container_name }}"
-        "#;
-        imp::expand_template::expand_template(&content, todo0_template_str)
+        // Extract templates from the [[template]] section
+        let templates =
+            if let Some(template_array) = parsed_toml.get("template").and_then(|t| t.as_array()) {
+                let mut template_map = std::collections::HashMap::new();
+                for template_entry in template_array {
+                    if let Some(name) = template_entry.get("name").and_then(|n| n.as_str()) {
+                        if let Some(template_str) =
+                            template_entry.get("template").and_then(|t| t.as_str())
+                        {
+                            template_map.insert(name.to_string(), template_str.to_string());
+                        }
+                    }
+                }
+                template_map
+            } else {
+                return Err(ConfigError(
+                    "No [[template]] section found in the TOML file".to_string(),
+                ));
+            };
+
+        imp::expand_template(&content, &templates)
             .map_err(|err| ConfigError(format!("Template expansion error: {}", err)))
     }
 

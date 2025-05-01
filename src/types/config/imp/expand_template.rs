@@ -4,7 +4,10 @@ use toml::{value::Table, Value};
 
 pub(crate) struct Expanded(pub(crate) String);
 
-pub(super) fn expand_template(input: &str, template_str: &str) -> Result<Expanded, String> {
+pub(super) fn expand_template(
+    input: &str,
+    templates: &HashMap<String, String>,
+) -> Result<Expanded, String> {
     let mut data: Value = toml::from_str(&input).map_err(|e| e.to_string())?;
 
     // Access processes
@@ -15,9 +18,11 @@ pub(super) fn expand_template(input: &str, template_str: &str) -> Result<Expande
 
     let mut jinja_env = Environment::new();
 
-    jinja_env
-        .add_template("PROCESS PODMAN", &template_str)
-        .map_err(|_| "Invalid template".to_string())?;
+    for (name, template_str) in templates {
+        jinja_env
+            .add_template(name, template_str)
+            .map_err(|_| format!("Invalid template: {}", name))?;
+    }
 
     for proc in processes {
         let id = proc
@@ -70,8 +75,14 @@ pub(super) fn expand_template(input: &str, template_str: &str) -> Result<Expande
             // Reemplazar process.template
             proc.as_table_mut()
                 .unwrap()
-                .insert("template".to_string(), Value::Table(rendered_map));
+                .extend(rendered_map.into_iter());
+            proc.as_table_mut().unwrap().remove("template");
         }
+    }
+
+    // Remove the "template" section from the data
+    if let Some(_templates) = data.get_mut("template").and_then(Value::as_array_mut) {
+        data.as_table_mut().unwrap().remove("template");
     }
 
     let output = toml::to_string_pretty(&data).unwrap();
@@ -93,7 +104,19 @@ fn check_vars(
     input_map: &HashMap<String, String>,
 ) -> Result<(), String> {
     let template_str = template.source();
+
+    // Check for extra variables in the input map
     let required_vars = extract_vars_from_template(template_str);
+
+    let extra_vars: Vec<String> = input_map
+        .keys()
+        .filter(|key| *key != "template" && !required_vars.contains(*key))
+        .cloned()
+        .collect();
+
+    if !extra_vars.is_empty() {
+        return Err(format!("Extra variables in input map: {:?}", extra_vars));
+    }
 
     let missing_vars: Vec<String> = required_vars
         .iter()

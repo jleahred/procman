@@ -12,8 +12,8 @@ pub(crate) struct RunningStatus {
     pub(crate) file_uid: ConfigUid,
     #[serde(rename = "file_format")]
     pub(crate) _file_format: String,
-    pub(crate) processes: HashMap<ProcessId, ProcessWatched>,
     pub(crate) last_update: NaiveDateTime,
+    pub(crate) processes: HashMap<ProcessId, ProcessWatched>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]

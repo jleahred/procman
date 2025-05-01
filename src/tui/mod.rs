@@ -64,7 +64,7 @@ pub(crate) fn run(cfg_file_name: &str) -> Result<(), Box<dyn std::error::Error>>
 
                 let cfg_file_name = match &status {
                     Ok(ref s) => &s.cfg_file_name,
-                    Err(_) => &format!("error reading config file {}", cfg_file_name),
+                    Err(_) => &format!("error config file {} or persistent file", cfg_file_name),
                 };
                 f.render_widget(
                     render_table(&cfg_file_name, &merged_process_info),
