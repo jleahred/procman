@@ -39,6 +39,15 @@ depends_on = ["example_process"]
 # -----------------------------------------
 
 [[process]]
+id = "example_process podman detached"
+command = "podman run -d -ti --replace --rm --name test docker.io/ubuntu:22.04 sleep 1122"  # -d is important
+apply_on = "2024-10-01T12:00:00"
+type = "podman_cid"
+
+# -----------------------------------------
+
+
+[[process]]
 id = "TEST_A"
 command = "while true; do echo $(date)  '  test a'; sleep 1; done"
 apply_on = "2029-11-01T12:20:00"

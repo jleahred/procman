@@ -26,7 +26,7 @@ pub(super) fn check(lock_file_name: &str) -> Result<File, String> {
 }
 
 pub(super) fn remove_lock_file(locked: &File, lock_file_name: &str) {
-    if let Err(e) = locked.unlock() {
+    if let Err(e) = FileExt::unlock(locked) {
         eprintln!("Failed to unlock file: {}", e);
     }
 

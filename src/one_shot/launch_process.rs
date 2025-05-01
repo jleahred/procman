@@ -1,6 +1,5 @@
-use crate::types::config::{self, ProcessId};
+use crate::types::config::{self, ProcessType};
 use crate::types::running_status::{ProcessStatus, ProcessWatched};
-use chrono::NaiveDateTime;
 use std::fs;
 use std::process::Stdio;
 use std::{
@@ -24,11 +23,14 @@ impl super::OneShot {
                                 "[{}] Running process     apply_on: {}",
                                 proc_id.0, process_config.apply_on
                             );
-                            match run_process(
-                                &process_config.command,
-                                &process_config.id,
-                                &process_config.apply_on,
-                            ) {
+
+                            let runproc = match process_config.process_type {
+                                ProcessType::Fake => run_process,
+                                ProcessType::Normal => run_process,
+                                ProcessType::PodmanCid => run_process_podman,
+                            };
+
+                            match runproc(&process_config.command) {
                                 Ok(pid) => {
                                     println!(
                                         "[{}] Launched process  with PID: {}   apply_on: {}",
@@ -66,11 +68,7 @@ impl super::OneShot {
     }
 }
 
-fn run_process(
-    command: &config::Command,
-    _process_id: &ProcessId,
-    _apply_on: &NaiveDateTime,
-) -> Result<u32, io::Error> {
+fn run_process(command: &config::Command) -> Result<u32, io::Error> {
     let child: Child = Command::new("sh")
         .arg("-c")
         .arg(&command.0)
@@ -85,11 +83,7 @@ fn run_process(
     Ok(child.id())
 }
 
-fn run_process_podman(
-    command: &config::Command,
-    _process_id: &ProcessId,
-    _apply_on: &NaiveDateTime,
-) -> Result<u32, io::Error> {
+fn run_process_podman(command: &config::Command) -> Result<u32, io::Error> {
     let child: Child = Command::new("sh")
         .arg("-c")
         .arg(&command.0)
@@ -118,8 +112,6 @@ fn run_process_podman(
 }
 
 use std::str;
-
-use super::OneShot;
 
 fn get_real_pid_podman_detach(container_id: &str) -> std::io::Result<u32> {
     println!(

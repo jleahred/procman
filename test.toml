@@ -6,7 +6,7 @@ file_format = "0"
 id = "A"
 # command = "podman run -d  --replace --rm --name temp test echo 'hi' && sleep 99999"
 command = "echo 'hi' && sleep 99999"
-apply_on = "2024-11-01T12:00:00"
+apply_on = "2029-11-01T12:00:00"
 
 [process.schedule]
 start_time = "00:00:00"
@@ -20,5 +20,19 @@ timeout = "5s"
 [[process]]
 id = "B"
 command = "sleep 121212"
-apply_on = "2024-10-01T12:00:00"
+apply_on = "2029-10-01T12:00:00"
 depends_on = ["A"]
+
+
+[[process]]
+id = "example_process podman detached"
+command = "podman run -d --replace --rm --name=test incubator_tini sleep 1122"
+apply_on = "2024-10-01T12:00:00"
+type = "podman_cid"
+
+
+[[process]]
+id = "podman exec test sleep 5566"
+command = "podman exec test sleep 5566"
+apply_on = "2029-10-01T12:00:00"
+

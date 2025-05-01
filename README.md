@@ -228,6 +228,29 @@ Circular references (and self references a a specific case) will be detected on 
 Also it will check horphan references
 
 
+## Running podman detached
+
+Podman can run in `detached` mode and without a `root-daemon`.
+
+This introduces some challenges for supervision.
+
+For this case, there is an option:
+
+`process.type = "podman_cid"`
+
+This means it will expect a `podman run -d` (aka podman run detached) which will immediately return the `cid`, and from that `cid` the `pid` will be obtained to supervise the process.
+
+```toml
+[[process]]
+id = "example_process podman detached"
+command = "podman run -d --replace --rm --name test incubator_tini sleep 1122"
+apply_on = "2024-10-01T12:00:00"
+type = "podman_cid"
+```
+
+> **IMPORTANT!**  
+> It is highly recommended to always use containers with `tini`
+
 
 
 ## Watched ProcessStatus

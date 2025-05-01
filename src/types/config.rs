@@ -70,6 +70,11 @@ pub(crate) struct Schedule {
 pub(crate) enum ProcessType {
     Normal,
     Fake,
+    /// podman running detached and returning the cid
+    /// podman run -d
+    /// With cid, we will look for real process pid on system
+    #[serde(rename = "podman_cid")]
+    PodmanCid,
 }
 
 pub(crate) struct ActiveProcessByConfig(pub(crate) HashMap<ProcessId, ProcessConfig>);
