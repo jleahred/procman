@@ -12,8 +12,10 @@ lazy_static::lazy_static! {
 }
 
 impl super::OneShot {
-    pub(super) fn save(self: OneShot) -> Self {
-        let mut previous_saved = PREVIOUS_SAVED.lock().unwrap();
+    pub(super) fn save(self: OneShot) -> Result<Self, String> {
+        let mut previous_saved = PREVIOUS_SAVED
+            .lock()
+            .map_err(|err| format!("Failed to acquire lock: {}", err))?;
 
         let now = chrono::Local::now().naive_local();
 
@@ -25,7 +27,7 @@ impl super::OneShot {
                     // println!(
                     //     "No changes detected in RunningStatus and last save was recent, skipping save."
                     // );
-                    return self;
+                    return Ok(self);
                 }
             }
         }
@@ -36,26 +38,30 @@ impl super::OneShot {
 
         let file_path = self.persist_path.clone();
 
-        fs::create_dir_all(&file_path)
-            .expect(&format!("Failed to create directory on {}", &file_path));
+        if let Err(err) = fs::create_dir_all(&file_path) {
+            return Err(format!(
+                "Failed to create directory on {}: {}",
+                &file_path, err
+            ));
+        }
         let full_path = format!("{}/{}.toml", file_path, running_status.file_uid.0);
         let full_path_tmp = format!("{}.tmp", full_path);
 
         let toml_content = toml::to_string(&running_status)
-            .unwrap_or_else(|err| panic!("Failed to serialize RunningStatus to TOML: {}", err));
+            .map_err(|err| format!("Failed to serialize RunningStatus to TOML: {}", err))?;
 
         let mut file = fs::File::create(&full_path_tmp)
-            .unwrap_or_else(|err| panic!("Failed to create file {}: {}", full_path_tmp, err));
+            .map_err(|err| format!("Failed to create file {}: {}", full_path_tmp, err))?;
 
         file.write_all(toml_content.as_bytes())
-            .unwrap_or_else(|err| panic!("Failed to write to file {}: {}", full_path_tmp, err));
+            .map_err(|err| format!("Failed to write to file {}: {}", full_path_tmp, err))?;
 
         rename(full_path_tmp.clone(), &full_path)
-            .unwrap_or_else(|err| panic!("Failed to rename to file {}: {}", full_path_tmp, err));
+            .map_err(|err| format!("Failed to rename file {}: {}", full_path_tmp, err))?;
         // println!("RunningStatus saved to {}", full_path);
 
         // not in a hurry, keep calm and cooperate
         thread::sleep(std::time::Duration::from_millis(100));
-        self
+        Ok(self)
     }
 }

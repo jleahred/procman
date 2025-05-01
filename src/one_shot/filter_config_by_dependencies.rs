@@ -3,7 +3,7 @@ use crate::types::running_status::ProcessStatus;
 use std::collections::HashSet;
 
 impl super::OneShot {
-    pub(super) fn filter_config_by_dependencies(mut self) -> Self {
+    pub(super) fn filter_config_by_dependencies(mut self) -> Result<Self, String> {
         let proc_id_running = {
             let mut proc_id_running = HashSet::<ProcessId>::new();
 

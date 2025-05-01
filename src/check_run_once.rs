@@ -5,10 +5,8 @@ use std::path::Path;
 
 pub(super) fn check(lock_file_name: &str) -> Result<File, String> {
     //  todo: /tmp/procman here???
-    fs::create_dir_all("/tmp/procman/").expect(&format!(
-        "Failed to create directory on {}",
-        "/tmp/procman/"
-    ));
+    fs::create_dir_all("/tmp/procman/")
+        .map_err(|e| format!("Failed to create directory on {}: {}", "/tmp/procman/", e))?;
 
     let full_path = format!("/tmp/procman/{}", lock_file_name);
     let path = Path::new(&full_path);

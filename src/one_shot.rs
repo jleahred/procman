@@ -22,16 +22,16 @@ pub(crate) fn one_shot(full_config_filename: &str) -> Result<(), String> {
     println!("Checking... {}\n", chrono::Local::now());
 
     OneShot::create(&full_config_filename)?
-        .filter_config_by_dependencies()
-        .cfg_actived_not_in_watched()
-        .stopped_with_active_cfg()
-        .launch_process()
-        .not_actived_config()
-        .try_stop()
-        .move2stop_pid_missing_on_system()
-        .move2stop_modif_signature()
-        .move2stopping_modif_applyon()
-        .run_init_cmd()  
+        .filter_config_by_dependencies()?
+        .cfg_actived_not_in_watched()?
+        .stopped_with_active_cfg()?
+        .launch_process()?
+        .not_actived_config()?
+        .try_stop()?
+        .move2stop_pid_missing_on_system()?
+        .move2stop_modif_signature()?
+        .move2stopping_modif_applyon()?
+        .run_init_cmd()  ?
         // .save()
         ;
     Ok(())

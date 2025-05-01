@@ -1,7 +1,6 @@
 mod check_run_once;
 mod cli_params;
 mod one_shot;
-mod read_config_file;
 mod tui;
 mod types; //  experimental
 

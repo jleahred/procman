@@ -1,9 +1,6 @@
 //  experimental!!!
 
-use crate::{
-    read_config_file,
-    types::config::{Config, ProcessConfig, ProcessId},
-};
+use crate::types::config::{Config, ProcessConfig, ProcessId};
 use crossterm::execute;
 use crossterm::terminal::EnterAlternateScreen;
 use crossterm::{
@@ -249,7 +246,8 @@ struct MergedProcessInfoPerProcess {
 
 fn get_status(cfg_file_name: &str) -> Result<Status, String> {
     let relative_path = Path::new(cfg_file_name);
-    let absolute_path = fs::canonicalize(&relative_path).expect("Failed to get absolute path");
+    let absolute_path = fs::canonicalize(&relative_path)
+        .map_err(|_| format!("Failed to get absolute path for {}", cfg_file_name))?;
     Ok(Status {
         cfg_file_name: absolute_path.display().to_string(),
         merged_process_info: get_process_info(cfg_file_name)?,
@@ -261,7 +259,7 @@ fn get_process_info(
 ) -> Result<BTreeMap<ProcessId, MergedProcessInfoPerProcess>, String> {
     let cfg = Config::read_from_file(&cfg_file_name).map_err(|e| e.0.to_string())?; //  todo:0
     let running_status =
-        crate::types::running_status::load_running_status("/tmp/procman/", &cfg.uid);
+        crate::types::running_status::load_running_status("/tmp/procman/", &cfg.uid)?;
     Ok(get_process_info_merged(&cfg, &running_status.processes))
 }
 

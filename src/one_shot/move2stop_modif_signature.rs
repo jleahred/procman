@@ -2,7 +2,7 @@ use crate::types::running_status::{self, ProcessStatus, ProcessWatched};
 use std::fs;
 
 impl super::OneShot {
-    pub(super) fn move2stop_modif_signature(mut self) -> Self {
+    pub(super) fn move2stop_modif_signature(mut self) -> Result<Self, String> {
         for (proc_id, proc_info) in self.processes.iter_mut() {
             match (
                 proc_id,

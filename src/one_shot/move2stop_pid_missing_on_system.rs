@@ -1,7 +1,7 @@
 use crate::types::running_status::{self, ProcessStatus, ProcessWatched};
 
 impl super::OneShot {
-    pub(super) fn move2stop_pid_missing_on_system(mut self) -> Self {
+    pub(super) fn move2stop_pid_missing_on_system(mut self) -> Result<Self, String> {
         for (proc_id, proc_info) in self.processes.iter_mut() {
             match (
                 proc_id,

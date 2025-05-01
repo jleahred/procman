@@ -10,7 +10,7 @@ use std::{
 };
 
 impl super::OneShot {
-    pub(super) fn launch_process(mut self) -> Self {
+    pub(super) fn launch_process(mut self) -> Result<Self, String> {
         for (proc_id, proc_info) in self.processes.iter_mut() {
             match (
                 proc_info.process_config.as_ref(),
@@ -37,15 +37,27 @@ impl super::OneShot {
                                         process_config.id.0, pid, process_config.apply_on
                                     );
 
-                                    proc_info.process_running = Some(ProcessWatched {
-                                        id: proc_id.clone(),
-                                        apply_on: process_config.apply_on,
-                                        status: ProcessStatus::PendingInitCmd {
-                                            pid,
-                                            procman_uid: get_cmdline(pid).unwrap(), // TODO: Mejorar con un UUID único
-                                        },
-                                        applied_on: chrono::Local::now().naive_local(),
-                                    });
+                                    let procman_uid = get_cmdline(pid); // TODO: Mejorar con un UUID único
+
+                                    match procman_uid {
+                                        Ok(procman_uid) => {
+                                            proc_info.process_running = Some(ProcessWatched {
+                                                id: proc_id.clone(),
+                                                apply_on: process_config.apply_on,
+                                                status: ProcessStatus::PendingInitCmd {
+                                                    pid,
+                                                    procman_uid,
+                                                },
+                                                applied_on: chrono::Local::now().naive_local(),
+                                            });
+                                        }
+                                        Err(error) => {
+                                            eprintln!(
+                                                "[{}] Failed to launch process (getting cmd line): {}",
+                                                process_config.id.0, error
+                                            )
+                                        }
+                                    }
                                 }
                                 Err(e) => {
                                     eprintln!(
@@ -95,10 +107,7 @@ fn run_process_podman(command: &config::Command) -> Result<u32, io::Error> {
     if !output.status.success() {
         return Err(std::io::Error::new(
             std::io::ErrorKind::Other,
-            format!(
-                "Process failed with status: {}",
-                output.status.code().unwrap_or(-1)
-            ),
+            format!("Process failed with status: {:?}", output.status.code()),
         ));
     }
 

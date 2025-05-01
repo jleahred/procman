@@ -11,7 +11,7 @@ impl super::OneShot {
     pub(super) fn create(full_config_filename: &str) -> Result<Self, String> {
         let config: Config =
             Config::read_from_file(full_config_filename).map_err(|e| e.0.to_string())?;
-        let running_status = load_running_status(RUNNING_STATUS_FOLDER, &config.uid);
+        let running_status = load_running_status(RUNNING_STATUS_FOLDER, &config.uid)?;
         let active_procs_by_config = config.get_active_procs_by_config();
 
         let mut result = Self {

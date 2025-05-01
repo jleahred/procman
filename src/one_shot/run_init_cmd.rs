@@ -6,7 +6,7 @@ use std::time;
 use std::time::Duration;
 
 impl super::OneShot {
-    pub(super) fn run_init_cmd(mut self) -> Self {
+    pub(super) fn run_init_cmd(mut self) -> Result<Self, String> {
         for (proc_id, proc_info) in self.processes.iter_mut() {
             match (
                 proc_info.process_config.as_ref(),
@@ -21,9 +21,7 @@ impl super::OneShot {
                                 "[{}] running init command  {}",
                                 proc_id.0, init_command.command.0
                             );
-                            let timeout = init_command
-                                .timeout
-                                .unwrap_or_else(|| Duration::from_secs(10));
+                            let timeout = init_command.timeout.unwrap_or(Duration::from_secs(10));
                             match run_command_with_timeout(&init_command.command.0, timeout) {
                                 Ok(()) => {
                                     println!("[{}] Init command succeeded for process", proc_id.0);
