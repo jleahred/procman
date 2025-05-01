@@ -52,6 +52,15 @@ fn main() {
 
             check_run_once::remove_lock_file(&locked, &processes_filename); //  higienic, not critic
         }
+        cli_params::Commands::ExpandConfig { processes_filename } => {
+            println!("Expanding config: {}", processes_filename);
+            let expanded = Config::read_and_expand(&processes_filename).unwrap_or_else(|err| {
+                eprintln!("CRITIC: Failed to read config file: {}", err.0);
+                std::process::exit(1);
+            });
+            println!("Expanded config: {} .....................................", processes_filename);
+            println!("{}", expanded.0);
+        }
         cli_params::Commands::Check { processes_filename } => {
             println!("Checking: {}", processes_filename);
             let _ = Config::read_from_file(&processes_filename).unwrap_or_else(|err| {

@@ -417,6 +417,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "minijinja"
+version = "2.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "98642a6dfca91122779a307b77cd07a4aa951fbe32232aaf5bad9febc66be754"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "miniz_oxide"
 version = "0.8.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -552,6 +561,7 @@ dependencies = [
  "fs2",
  "humantime-serde",
  "lazy_static",
+ "minijinja",
  "nix 0.26.4",
  "procfs",
  "ratatui",

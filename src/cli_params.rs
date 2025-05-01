@@ -16,6 +16,11 @@ pub(crate) enum Commands {
         /// configuration file to use. toml format with info about the processes to run
         processes_filename: String,
     },
+    /// Expand config templates and show on stdout
+    ExpandConfig {
+        /// configuration file to use. toml format with info about the processes to run
+        processes_filename: String,
+    },
     /// check the given processes configuration file
     Check {
         /// configuration file to use. toml format with info about the processes to run

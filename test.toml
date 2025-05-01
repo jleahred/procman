@@ -6,12 +6,24 @@ file_format = "0"
 
 [[process]]
 id = "A"
+apply_on = "2029-11-01T12:00:00"
 
 [process.template]
-name = "PODMAN"
+name = "PROCESS PODMAN"
 container_name = "test"
 image = "docker.io/ubuntu:24.04"
 command = "sleep 444"
+
+
+[[process]]
+id = "B"
+apply_on = "2029-11-01T12:00:00"
+
+[process.template]
+name = "PROCESS PODMAN"
+container_name = "test"
+image = "docker.io/ubuntu:24.04"
+command = "sleep 555"
 
 
 # command = "podman run -d  --replace --rm --name temp test echo 'hi' && sleep 99999"
@@ -56,10 +68,17 @@ command = "sleep 444"
 # apply_on = "2029-10-01T12:00:00"
 
 
-
 # template...
 # image: docker.io/ubuntu:24.04, name = test, command = sleep 444
 # command = "podman run --init --rm --name   $NAME  $IMAGE  $COMMAND"
 # before = "podman stop -t4   $NAME  ||  true   &&  podman rm -f  $NAME"
 # health_check = "[ \"$(podman inspect --format '{{.State.Status}}' $NAME)\" = \"running\" ]"
 # stop = "podman stop -t4  $NAME ||  true   &&  podman rm -f  $NAME"
+# # image = "{{ image }}"
+# # name = "{{ name }}"
+# # command = "{{ command }}"
+
+# command = "podman run --init --rm --name {{ name }} {{ image }} {{ command }}"
+# before = "podman stop -t4 {{ name }} || true && podman rm -f {{ name }}"
+# health_check = "[ \"$(podman inspect --format '{{ '{{.State.Status}}' }}' {{ name }})\" = \"running\" ]"
+# stop = "podman stop -t4 {{ name }} || true && podman rm -f {{ name }}"

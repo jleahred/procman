@@ -4,7 +4,7 @@
 ## TODO
 
 * añadir templates
-* read_config_file_or_panic quitar el panic
+* tipo daemon
 * rename running for watched when pertinent
     * running_status
     * process_running
@@ -12,7 +12,6 @@
     * proc_id_running
     * running.status
     * 
-* tipo daemon
 * comando de cierre opcional
 * configuración tiempo entre rearranques
 * tipo de servicio adicional para podman run detatch

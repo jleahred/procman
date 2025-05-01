@@ -1,7 +1,9 @@
-use super::*;
+mod expand_template;
 
+use super::*;
 use crate::types::config::Config;
 use chrono::Weekday;
+use expand_template::Expanded;
 use serde::de::{Deserializer, SeqAccess, Visitor};
 use serde::Deserialize;
 use std::fmt;
@@ -9,11 +11,32 @@ use std::fs;
 use toml;
 
 impl Config {
-    pub(crate) fn read_from_file(file_path: &str) -> Result<Config, ConfigError> {
+    pub(crate) fn read_and_expand(file_path: &str) -> Result<Expanded, ConfigError> {
         let content = fs::read_to_string(file_path).map_err(|err| {
             ConfigError(format!("Failed to read TOML file '{}': {}", file_path, err))
         })?;
-        let config: Config = toml::from_str(&content).map_err(|err| {
+
+        let todo0_template_str = r#"
+# image = "{{ image }}"
+# name = "{{ name }}"
+# command = "{{ command }}"
+
+command = "podman run --init --rm --name {{ name }} {{ image }} {{ command }}"
+before = "podman stop -t4 {{ name }} || true && podman rm -f {{ name }}"
+health_check = "[ \"$(podman inspect --format '{{ '{{.State.Status}}' }}' {{ name }})\" = \"running\" ]"
+stop = "podman stop -t4 {{ name }} || true && podman rm -f {{ name }}"
+        "#;
+        imp::expand_template::expand_template(&content, todo0_template_str)
+            .map_err(|err| ConfigError(format!("Template expansion error: {}", err)))
+    }
+
+    pub(crate) fn read_from_file(file_path: &str) -> Result<Config, ConfigError> {
+        let content = Self::read_and_expand(file_path)?;
+        // let content = fs::read_to_string(file_path).map_err(|err| {
+        //     ConfigError(format!("Failed to read TOML file '{}': {}", file_path, err))
+        // })?;
+
+        let config: Config = toml::from_str(&content.0).map_err(|err| {
             ConfigError(format!(
                 "Failed to parse TOML content at '{}': {}",
                 file_path, err
