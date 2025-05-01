@@ -9,8 +9,8 @@ id = "A"
 apply_on = "2029-11-01T12:00:00"
 
 [process.template]
-name = "PROCESS PODMAN"
-container_name = "test"
+template = "PROCESS PODMAN"
+container_name = "test_a"
 image = "docker.io/ubuntu:24.04"
 command = "sleep 444"
 
@@ -20,8 +20,8 @@ id = "B"
 apply_on = "2029-11-01T12:00:00"
 
 [process.template]
-name = "PROCESS PODMAN"
-container_name = "test"
+template = "PROCESS PODMAN"
+container_name = "test_b"
 image = "docker.io/ubuntu:24.04"
 command = "sleep 555"
 

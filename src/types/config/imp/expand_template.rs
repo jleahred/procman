@@ -1,6 +1,5 @@
 use minijinja::{Environment, Value as JinjaValue};
-use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, fs};
+use std::collections::{HashMap, HashSet};
 use toml::{value::Table, Value};
 
 pub(crate) struct Expanded(pub(crate) String);
@@ -21,6 +20,12 @@ pub(super) fn expand_template(input: &str, template_str: &str) -> Result<Expande
         .map_err(|_| "Invalid template".to_string())?;
 
     for proc in processes {
+        let id = proc
+            .get("id")
+            .and_then(Value::as_str)
+            .ok_or_else(|| "Process ID not found or is not a string".to_string())?
+            .to_string();
+
         // Clone template table as a map to pass it to the template engine
         if let Some(template_table) = proc
             .get_mut("template")
@@ -34,15 +39,29 @@ pub(super) fn expand_template(input: &str, template_str: &str) -> Result<Expande
 
             // Renderizar usando minijinja
             let template_name = input_map
-                .get("name")
+                .get("template")
                 .map(String::as_str)
-                .unwrap_or("PROCESS PODMAN");
+                .ok_or_else(|| {
+                    format!(
+                        "Procesing template for process.id: <{}>. 'template' not found in: {:#?}",
+                        id, input_map
+                    )
+                })?;
 
-            let rendered_str = jinja_env
+            let jinja_template = jinja_env
                 .get_template(template_name)
-                .expect("Template not found")
+                .map_err(|e| e.to_string())?;
+
+            check_vars(&jinja_template, &input_map).map_err(|e| {
+                format!(
+                    "Error in template '{}', process id '{}': {}",
+                    template_name, id, e
+                )
+            })?;
+
+            let rendered_str = jinja_template
                 .render(JinjaValue::from(input_map.clone()))
-                .expect("Error rendering template");
+                .map_err(|_| "Error rendering template".to_string())?;
 
             // Parsear el resultado como TOML
             let rendered_map: Table = toml::from_str(&rendered_str)
@@ -57,4 +76,37 @@ pub(super) fn expand_template(input: &str, template_str: &str) -> Result<Expande
 
     let output = toml::to_string_pretty(&data).unwrap();
     Ok(Expanded(output))
+}
+
+use regex::Regex;
+
+fn extract_vars_from_template(template_str: &str) -> HashSet<String> {
+    let re = Regex::new(r"\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}").unwrap();
+    re.captures_iter(template_str)
+        .filter_map(|cap| cap.get(1))
+        .map(|m| m.as_str().to_string())
+        .collect()
+}
+
+fn check_vars(
+    template: &minijinja::Template,
+    input_map: &HashMap<String, String>,
+) -> Result<(), String> {
+    let template_str = template.source();
+    let required_vars = extract_vars_from_template(template_str);
+
+    let missing_vars: Vec<String> = required_vars
+        .iter()
+        .filter(|var| !input_map.contains_key(*var))
+        .cloned()
+        .collect();
+
+    if !missing_vars.is_empty() {
+        return Err(format!(
+            "Missing variables in input map: {:?}",
+            missing_vars
+        ));
+    }
+
+    Ok(())
 }

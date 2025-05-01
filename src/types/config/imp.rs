@@ -18,13 +18,13 @@ impl Config {
 
         let todo0_template_str = r#"
 # image = "{{ image }}"
-# name = "{{ name }}"
+# container_name = "{{ container_name }}"
 # command = "{{ command }}"
 
-command = "podman run --init --rm --name {{ name }} {{ image }} {{ command }}"
-before = "podman stop -t4 {{ name }} || true && podman rm -f {{ name }}"
-health_check = "[ \"$(podman inspect --format '{{ '{{.State.Status}}' }}' {{ name }})\" = \"running\" ]"
-stop = "podman stop -t4 {{ name }} || true && podman rm -f {{ name }}"
+command = "podman run --init --rm --name {{ container_name }} {{ image }} {{ command }}"
+before = "podman stop -t4 {{ container_name }} || true && podman rm -f {{ container_name }}"
+health_check = "[ \"$(podman inspect --format '{{ '{{.State.Status}}' }}' {{ container_name }})\" = \"running\" ]"
+stop = "podman stop -t4 {{ container_name }} || true && podman rm -f {{ container_name }}"
         "#;
         imp::expand_template::expand_template(&content, todo0_template_str)
             .map_err(|err| ConfigError(format!("Template expansion error: {}", err)))
