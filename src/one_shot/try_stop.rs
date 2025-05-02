@@ -1,3 +1,5 @@
+use std::{process::Command, thread, time};
+
 use crate::types::running_status::{self, ProcessStatus, ProcessWatched};
 use nix::errno::Errno;
 
@@ -14,11 +16,13 @@ impl super::OneShot {
                     | ProcessStatus::Running {
                         pid: _,
                         procman_uid: _,
+                        stop_command: _,
                     }
                     | ProcessStatus::ShouldBeRunning {}
                     | ProcessStatus::PendingInitCmd {
                         pid: _,
                         procman_uid: _,
+                        stop_command: _,
                     } => {}
 
                     //  --------------
@@ -27,38 +31,128 @@ impl super::OneShot {
                         procman_uid,
                         retries,
                         last_attempt: _,
+                        stop_command,
                     } => {
                         let force = if retries < 5 { false } else { true };
 
-                        match kill_process(pid, force) {
-                            Ok(()) => {
-                                println!(
-                                    "[{}] Sent command to stop  forcekill: {}",
-                                    proc_id.0, force
-                                );
+                        match (force, &stop_command) {
+                            (true, _) => {
+                                match kill_process(pid, force) {
+                                    Ok(()) => {
+                                        println!(
+                                            "[{}] Sent command to stop  forcekill: {}",
+                                            proc_id.0, force
+                                        );
+                                    }
+                                    Err(err) => {
+                                        eprintln!(
+                                            "[{}] Failed to send kill signal for pid: {}  {}",
+                                            proc_id.0, pid, err
+                                        );
+                                    }
+                                }
+                                process.process_watched = Some(ProcessWatched {
+                                    id: proc_id.clone(),
+                                    apply_on: proc_watched.apply_on,
+                                    status: running_status::ProcessStatus::Stopping {
+                                        pid,
+                                        procman_uid,
+                                        retries: retries + 1,
+                                        last_attempt: chrono::Local::now().naive_local(),
+                                        stop_command,
+                                    },
+                                    applied_on: chrono::Local::now().naive_local(),
+                                });
                             }
-                            Err(err) => {
-                                eprintln!(
-                                    "[{}] Failed to send kill signal for pid: {}  {}",
-                                    proc_id.0, pid, err
-                                );
+                            (false, None) => {
+                                match kill_process(pid, force) {
+                                    Ok(()) => {
+                                        println!(
+                                            "[{}] Sent command to stop  forcekill: {}",
+                                            proc_id.0, force
+                                        );
+                                    }
+                                    Err(err) => {
+                                        eprintln!(
+                                            "[{}] Failed to send kill signal for pid: {}  {}",
+                                            proc_id.0, pid, err
+                                        );
+                                    }
+                                }
+                                process.process_watched = Some(ProcessWatched {
+                                    id: proc_id.clone(),
+                                    apply_on: proc_watched.apply_on,
+                                    status: running_status::ProcessStatus::Stopping {
+                                        pid,
+                                        procman_uid,
+                                        retries: retries + 1,
+                                        last_attempt: chrono::Local::now().naive_local(),
+                                        stop_command,
+                                    },
+                                    applied_on: chrono::Local::now().naive_local(),
+                                });
+                            }
+                            (false, Some(command_stop)) => {
+                                let timeout = command_stop
+                                    .timeout
+                                    .unwrap_or_else(|| std::time::Duration::from_secs(5));
+                                if timeout.as_secs() > 0 {
+                                    println!(
+                                        "[{}] executing command stop {}",
+                                        proc_id.0, &command_stop.command.0
+                                    );
+                                    match run_command_with_timeout(&command_stop.command.0, timeout)
+                                    {
+                                        Ok(()) => {
+                                            println!(
+                                                "[{}] Command stop succeeded for process",
+                                                proc_id.0
+                                            );
+                                            process.process_watched = Some(ProcessWatched {
+                                                id: proc_id.clone(),
+                                                apply_on: proc_watched.apply_on,
+                                                status: running_status::ProcessStatus::Stopped,
+                                                applied_on: chrono::Local::now().naive_local(),
+                                            });
+                                        }
+                                        Err(err) => {
+                                            eprintln!(
+                                                "[{}] Command stop failed.  {}",
+                                                proc_id.0, err
+                                            );
+                                            process.process_watched = Some(ProcessWatched {
+                                                id: proc_id.clone(),
+                                                apply_on: proc_watched.apply_on,
+                                                status: running_status::ProcessStatus::Stopping {
+                                                    pid,
+                                                    procman_uid,
+                                                    retries: retries + 1,
+                                                    last_attempt: chrono::Local::now()
+                                                        .naive_local(),
+                                                    stop_command,
+                                                },
+                                                applied_on: chrono::Local::now().naive_local(),
+                                            });
+                                        }
+                                    }
+                                } else {
+                                    return Err(format!(
+                                        "[{}] INCORRECT timeout in configuration: {}",
+                                        proc_id.0,
+                                        timeout.as_secs()
+                                    ));
+                                }
                             }
                         }
-
-                        process.process_watched = Some(ProcessWatched {
-                            id: proc_id.clone(),
-                            apply_on: proc_watched.apply_on,
-                            status: running_status::ProcessStatus::Stopping {
-                                pid,
-                                procman_uid,
-                                retries: retries + 1,
-                                last_attempt: chrono::Local::now().naive_local(),
-                            },
-                            applied_on: chrono::Local::now().naive_local(),
-                        });
                     }
                 },
-                (_, _, _) => {}
+                (_, None, _) => {
+                    eprintln!(
+                        "[{}] Process config not found for process {} despite being in running status",
+                        proc_id.0, proc_id.0
+                    );
+                }
+                (_, Some(_), None) => {}
             }
         }
         self.save()
@@ -83,4 +177,38 @@ fn kill_process(pid: u32, force: bool) -> Result<(), Errno> {
     // }
 
     // Ok(())
+}
+
+fn run_command_with_timeout(command: &str, timeout: time::Duration) -> Result<(), String> {
+    let command = command.to_string();
+    let mut child = Command::new("sh")
+        .arg("-c")
+        .arg(command)
+        .spawn()
+        .map_err(|e| format!("Failed to spawn command: {}", e))?;
+
+    // let pid = child.id();
+
+    let start = time::Instant::now();
+    while start.elapsed() < timeout {
+        match child.try_wait() {
+            Ok(Some(status)) => {
+                return if status.success() {
+                    Ok(())
+                } else {
+                    Err(format!("Command failed with status: {}", status))
+                };
+            }
+            Ok(None) => {
+                thread::sleep(time::Duration::from_millis(100));
+                continue;
+            }
+            Err(e) => return Err(format!("Error checking child process: {}", e)),
+        }
+    }
+
+    // Timeout: kill the process
+    let _ = child.kill();
+    let _ = child.wait(); // Important to avoid zombie processes
+    Err("Command timed out".to_string())
 }

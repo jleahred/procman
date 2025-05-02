@@ -16,6 +16,33 @@ pub(crate) struct Config {
     pub(crate) process: Vec<ProcessConfig>,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct ProcessConfig {
+    pub(crate) id: ProcessId,
+    pub(crate) command: Command,
+    pub(crate) apply_on: NaiveDateTime,
+    /// Command to execute when the process is running
+    /// for the process to transition to the running state, the command must complete successfully
+    /// it will only be attempted once
+    /// if the command fails, the stop process is initiated
+    pub(crate) init: Option<CommandInit>,
+
+    /// Este comando se ejecutará para detener el proceso
+    /// Si no existe este comando, se lanzará primero un `SIGTERM`
+    /// Si los reintentos fallan un `SIGKILL`
+    pub(crate) stop: Option<CommandStop>,
+
+    #[serde(default)]
+    pub(crate) schedule: Option<Schedule>,
+
+    #[serde(default, rename = "type")]
+    pub(crate) process_type: ProcessType,
+
+    #[serde(default)]
+    pub(crate) depends_on: Vec<ProcessId>,
+}
+
 pub(crate) struct ConfigError(pub(crate) String);
 
 /// process identification
@@ -38,22 +65,13 @@ pub(crate) struct CommandInit {
     pub(crate) timeout: Option<std::time::Duration>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Debug)]
 #[serde(deny_unknown_fields)]
-pub(crate) struct ProcessConfig {
-    pub(crate) id: ProcessId,
+pub(crate) struct CommandStop {
     pub(crate) command: Command,
-    pub(crate) init_command: Option<CommandInit>,
-    pub(crate) apply_on: NaiveDateTime,
-
+    #[serde(with = "humantime_serde")]
     #[serde(default)]
-    pub(crate) schedule: Option<Schedule>,
-
-    #[serde(default, rename = "type")]
-    pub(crate) process_type: ProcessType,
-
-    #[serde(default)]
-    pub(crate) depends_on: Vec<ProcessId>,
+    pub(crate) timeout: Option<std::time::Duration>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

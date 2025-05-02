@@ -47,6 +47,7 @@ impl super::OneShot {
                                                 status: ProcessStatus::PendingInitCmd {
                                                     pid,
                                                     procman_uid,
+                                                    stop_command: process_config.stop.clone(),
                                                 },
                                                 applied_on: chrono::Local::now().naive_local(),
                                             });

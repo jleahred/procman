@@ -1,6 +1,6 @@
 pub(crate) mod imp;
 
-use crate::types::config::{ConfigUid, ProcessId};
+use crate::types::config::{CommandStop, ConfigUid, ProcessId};
 use chrono::NaiveDateTime;
 pub(crate) use imp::load_running_status;
 use serde::{Deserialize, Serialize};
@@ -30,16 +30,19 @@ pub(crate) enum ProcessStatus {
     PendingInitCmd {
         pid: u32,
         procman_uid: String,
+        stop_command: Option<CommandStop>,
     },
     Running {
         pid: u32,
         procman_uid: String,
+        stop_command: Option<CommandStop>,
     },
     Stopping {
         pid: u32,
         procman_uid: String,
         retries: u32,
         last_attempt: NaiveDateTime,
+        stop_command: Option<CommandStop>,
     },
     Stopped,
 }

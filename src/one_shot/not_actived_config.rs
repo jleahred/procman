@@ -9,7 +9,11 @@ impl super::OneShot {
                 process.process_watched.clone(),
             ) {
                 (proc_id, None, Some(proc_watched)) => match proc_watched.status {
-                    ProcessStatus::Running { pid, procman_uid } => {
+                    ProcessStatus::Running {
+                        pid,
+                        procman_uid,
+                        stop_command,
+                    } => {
                         println!("[{}] Stopping from running", proc_id.0);
 
                         process.process_watched = Some(ProcessWatched {
@@ -20,6 +24,7 @@ impl super::OneShot {
                                 procman_uid,
                                 retries: 0,
                                 last_attempt: chrono::Local::now().naive_local(),
+                                stop_command,
                             },
                             applied_on: chrono::Local::now().naive_local(),
                         });
@@ -34,7 +39,11 @@ impl super::OneShot {
                             applied_on: chrono::Local::now().naive_local(),
                         });
                     }
-                    ProcessStatus::PendingInitCmd { pid, procman_uid } => {
+                    ProcessStatus::PendingInitCmd {
+                        pid,
+                        procman_uid,
+                        stop_command,
+                    } => {
                         println!("[{}] Stopping from init cmd", proc_id.0);
 
                         process.process_watched = Some(ProcessWatched {
@@ -45,6 +54,7 @@ impl super::OneShot {
                                 procman_uid,
                                 retries: 0,
                                 last_attempt: chrono::Local::now().naive_local(),
+                                stop_command,
                             },
                             applied_on: chrono::Local::now().naive_local(),
                         });
@@ -55,6 +65,7 @@ impl super::OneShot {
                         procman_uid: _,
                         retries: _,
                         last_attempt: _,
+                        stop_command: _,
                     } => {}
                 },
                 (_proc_id, _, _) => {}

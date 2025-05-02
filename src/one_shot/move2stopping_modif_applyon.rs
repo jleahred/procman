@@ -12,7 +12,11 @@ impl super::OneShot {
                     ProcessStatus::Stopped
                     | ProcessStatus::ShouldBeRunning
                     | ProcessStatus::Stopping { .. } => {}
-                    ProcessStatus::Running { pid, procman_uid } => {
+                    ProcessStatus::Running {
+                        pid,
+                        procman_uid,
+                        stop_command,
+                    } => {
                         if process_cfg.apply_on != proc_watched.apply_on {
                             eprintln!(
                                 "[{}] Stopping running process different apply on  {} != {}",
@@ -26,12 +30,17 @@ impl super::OneShot {
                                     procman_uid,
                                     retries: 0,
                                     last_attempt: chrono::Local::now().naive_local(),
+                                    stop_command,
                                 },
                                 applied_on: chrono::Local::now().naive_local(),
                             });
                         }
                     }
-                    ProcessStatus::PendingInitCmd { pid, procman_uid } => {
+                    ProcessStatus::PendingInitCmd {
+                        pid,
+                        procman_uid,
+                        stop_command,
+                    } => {
                         if process_cfg.apply_on != proc_watched.apply_on {
                             eprintln!(
                                 "[{}] Stopping initializing process different apply on  {} != {}",
@@ -45,6 +54,7 @@ impl super::OneShot {
                                     procman_uid,
                                     retries: 0,
                                     last_attempt: chrono::Local::now().naive_local(),
+                                    stop_command,
                                 },
                                 applied_on: chrono::Local::now().naive_local(),
                             });

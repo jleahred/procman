@@ -3,8 +3,15 @@
 
 ## TODO
 
-* comando de cierre opcional
-* tipo daemon
+* move2stop_pid_missing_on_system
+    * tiene que mover a stopping
+    * si está en stopping pero no hay configuración, tiene que ejecutar el comando stop
+    * si está en stopping pero no hay pid, tiene que ejecutar el comando stop
+    * si el comando stop ha funcionado, mover a stopped
+* refactorizar try_stop
+* hay que borrar los procesos que tengan running_status pero no estén en config
+    * proc_info.process_watched = None
+* comando de close/before opcional
 * configuración tiempo entre rearranques
 * tipo de servicio adicional para podman run detatch
 * renonbrar los running por watched
@@ -39,6 +46,7 @@
     * running_status
     * RUNNING_STATUS_FOLDER
     * running.status
+* tipo daemon
 
 
 
@@ -102,14 +110,14 @@ week_days = ["mon", "wed", "thu", "sun"] # optional
 # week_days = "mon-fri"   # also valid
 # week_days = "all"   # also valid
 
-[process.init_command]
+[process.init]
 command = "ls"
 timeout = "30s"   # optional
 
-
-[process.init_command]  # optional
-command = "sleep 4"
-timeout = "5s"   # optional
+# init fail example
+# [process.init]  # optional
+# command = "sleep 4"
+# timeout = "5s"   # optional
 ```
 
 ### Example of a process configuration 2
@@ -119,7 +127,7 @@ timeout = "5s"   # optional
 id = "example_process 2"
 command = "echo 'Starting process...'"
 apply_on = "2024-10-01T12:00:00"
-init_command = { command = "curl -I http://localhost:8080", timeout = "5s" }
+init = { command = "curl -I http://localhost:8080", timeout = "5s" }
 schedule = { start_time = "08:00:00", stop_time = "18:00:00", week_days = [
     "mon",
     "tue",
@@ -153,11 +161,13 @@ The process will be running during this time interval
 
 To define which days of the week it applies
 
-#### process.init_command
+#### process.init
 
 Once the process is running, it may be necessary to execute some initialization commands
 
 The process will not be marked as "running" until this command has successfully finished
+
+It will attempt once, and in case of failure, it will transition to the `Stopping` state, initiating the stop procedure.
 
 
 ### Change only the command...

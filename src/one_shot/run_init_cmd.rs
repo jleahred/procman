@@ -13,22 +13,25 @@ impl super::OneShot {
                 proc_info.process_watched.as_ref(),
             ) {
                 (Some(process_config), Some(running)) => match running.status.clone() {
-                    ProcessStatus::PendingInitCmd { pid, procman_uid } => match &process_config
-                        .init_command
-                    {
-                        Some(init_command) => {
-                            println!(
-                                "[{}] running init command  {}",
-                                proc_id.0, init_command.command.0
-                            );
-                            let timeout = init_command.timeout.unwrap_or(Duration::from_secs(10));
-                            match run_command_with_timeout(&init_command.command.0, timeout) {
+                    ProcessStatus::PendingInitCmd {
+                        pid,
+                        procman_uid,
+                        stop_command: _,
+                    } => match &process_config.init {
+                        Some(init) => {
+                            println!("[{}] running init command  {}", proc_id.0, init.command.0);
+                            let timeout = init.timeout.unwrap_or(Duration::from_secs(10));
+                            match run_command_with_timeout(&init.command.0, timeout) {
                                 Ok(()) => {
                                     println!("[{}] Init command succeeded for process", proc_id.0);
                                     proc_info.process_watched = Some(ProcessWatched {
                                         id: proc_id.clone(),
                                         apply_on: process_config.apply_on,
-                                        status: ProcessStatus::Running { pid, procman_uid },
+                                        status: ProcessStatus::Running {
+                                            pid,
+                                            procman_uid,
+                                            stop_command: process_config.stop.clone(),
+                                        },
                                         applied_on: chrono::Local::now().naive_local(),
                                     });
                                 }
@@ -43,6 +46,7 @@ impl super::OneShot {
                                             procman_uid,
                                             retries: 0,
                                             last_attempt: chrono::Local::now().naive_local(),
+                                            stop_command: process_config.stop.clone(),
                                         },
                                         applied_on: chrono::Local::now().naive_local(),
                                     });
@@ -54,7 +58,11 @@ impl super::OneShot {
                             proc_info.process_watched = Some(ProcessWatched {
                                 id: proc_id.clone(),
                                 apply_on: process_config.apply_on,
-                                status: ProcessStatus::Running { pid, procman_uid },
+                                status: ProcessStatus::Running {
+                                    pid,
+                                    procman_uid,
+                                    stop_command: process_config.stop.clone(),
+                                },
                                 applied_on: chrono::Local::now().naive_local(),
                             });
                         }
@@ -93,7 +101,7 @@ fn run_command_with_timeout(command: &str, timeout: time::Duration) -> Result<()
                 };
             }
             Ok(None) => {
-                thread::sleep(time::Duration::from_millis(50));
+                thread::sleep(time::Duration::from_millis(100));
                 continue;
             }
             Err(e) => return Err(format!("Error checking child process: {}", e)),
