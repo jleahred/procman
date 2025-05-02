@@ -3,8 +3,6 @@
 
 ## TODO
 
-* añadir templates
-* tipo daemon
 * rename running for watched when pertinent
     * running_status
     * process_running
@@ -13,6 +11,7 @@
     * running.status
     * 
 * comando de cierre opcional
+* tipo daemon
 * configuración tiempo entre rearranques
 * tipo de servicio adicional para podman run detatch
 * renonbrar los running por watched
@@ -65,6 +64,17 @@ It will not attempt to start many services simultaneously in parallel, as this c
 If this program stops (due to an error, failure, or intentionally), it should not stop all "managed" services.
 
 Once restarted, it should continue monitoring and managing.
+
+### AIMS
+
+* Start and stop processes
+* Declarative and simple  
+* No duplicate services  
+* Start at the right time  
+* The supervision process should not be critical  
+* It should not be easy to stop services due to failure or confusion  
+
+
 
 ## Examples of service configurations
 
@@ -231,6 +241,10 @@ Also it will check horphan references
 
 ## Running podman detached
 
+Perhaps it is better to use a specific template.
+
+This option may be removed in the future.
+
 Podman can run in `detached` mode and without a `root-daemon`.
 
 This introduces some challenges for supervision.
@@ -250,7 +264,125 @@ type = "podman_cid"
 ```
 
 > **IMPORTANT!**  
-> It is highly recommended to always use containers with `tini`
+> It is highly recommended to always use containers with `--init`
+
+
+## PODMAN
+
+
+Working with Podman in this "disconnected" supervision is delicate.
+
+One option to simplify would be to work at the container level instead of the `pid` level.
+
+For this system, one of the priorities is to ensure that services will start when needed.
+
+A running container, in the event of a "sudden" machine shutdown, could end up in a state that poorly responds to startup requests, such as `Created`.
+
+In the `Created` state, it will not respond to `run` or `--replace`, for example.
+
+To ensure the system starts, one option would be to execute:
+
+```toml
+podman stop -t4 test || true && podman rm -f test
+```
+
+It is also highly recommended to specify that containers must work with ```--init```.
+
+Not working with `pid` would require...
+
+```toml
+health_check = "[ \"$(podman inspect --format '{{ '{{.State.Status}}' }}' test)\" = \"running\" ]"
+stop = "podman stop -t4 test || true && podman rm -f test"
+```
+
+Nos quedaría algo como...
+
+```toml
+command = "podman run --init --rm --name test  docker.io/ubuntu:24.04  sleep 444"
+before = "podman stop -t4 test || true && podman rm -f test"
+health_check = "[ \"$(podman inspect --format '{{ '{{.State.Status}}' }}' test)\" = \"running\" ]"
+stop = "podman stop -t4 test || true && podman rm -f test"
+```
+
+This is a very safe configuration for working with a container:
+
+
+
+
+## Templates
+
+Many services may follow a common pattern.
+
+Repeating it is inconvenient and obscures the configuration.
+
+One option is to create a specific `kind`.
+
+This option is ideal unless you require changes or a new context arises.
+
+In both cases, it would be necessary to recompile and update this program.
+
+Using templates would allow removing redundancies but at the cost of worsening error messages.
+
+Templates should not be overused.
+
+A use case is working with `podman`, as seen in the previous section.
+
+Repeating the following configuration many times makes the configuration file difficult to read:
+
+```toml
+command = "podman run --init --rm --name test  docker.io/ubuntu:24.04  sleep 444"
+before = "podman stop -t4 test || true && podman rm -f test"
+health_check = "[ \"$(podman inspect --format '{{ '{{.State.Status}}' }}' test)\" = \"running\" ]"
+stop = "podman stop -t4 test || true && podman rm -f test"
+```
+
+A template could be defined as follows:
+
+```toml
+[[template]]
+name = "PODMAN"
+template = '''
+command = "podman run --init --rm --name {{ container_name }} {{ image }} {{ command }}"
+before = "podman stop -t4 {{ container_name }} || true && podman rm -f {{ container_name }}"
+health_check = "[ \"$(podman inspect --format '{{ '{{.State.Status}}' }}' {{ container_name }})\" = \"running\" ]"
+stop = "podman stop -t4 {{ container_name }} || true && podman rm -f {{ container_name }}"
+'''
+```
+
+And the service configuration would be simplified to:
+
+
+```toml
+[[process]]
+id = "A"
+apply_on = "2029-11-01T12:00:00"
+
+[process.template]
+template = "PODMAN"
+container_name = "test_a"
+image = "docker.io/ubuntu:24.04"
+command = "sleep 444"
+
+
+[[process]]
+id = "B"
+apply_on = "2029-11-01T12:00:00"
+
+[process.template]
+template = "PODMAN"
+container_name = "test_b"
+image = "docker.io/ubuntu:24.04"
+command = "sleep 555"
+
+```
+
+
+
+
+
+
+
+
 
 
 
