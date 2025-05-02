@@ -257,7 +257,7 @@ fn get_status(cfg_file_name: &str) -> Result<Status, String> {
 fn get_process_info(
     cfg_file_name: &str,
 ) -> Result<BTreeMap<ProcessId, MergedProcessInfoPerProcess>, String> {
-    let cfg = Config::read_from_file(&cfg_file_name).map_err(|e| e.0.to_string())?; //  todo:0
+    let cfg = Config::read_from_file(&cfg_file_name).map_err(|e| e.0.to_string())?;
     let running_status =
         crate::types::running_status::load_running_status("/tmp/procman/", &cfg.uid)?;
     Ok(get_process_info_merged(&cfg, &running_status.processes))

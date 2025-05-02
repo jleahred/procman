@@ -77,6 +77,24 @@ apply_on = "2029-10-01T12:20:00"
 depends_on = ["TEST_A", "TEST_B"]
 
 
+# ---------------------------------------------
+#     STOP
+
+[[process]]
+id = "STOP_A"
+command = "echo 'hi' && sleep 99999"
+apply_on = "2029-11-01T12:00:00"
+stop = "sleep 1"  # just de command
+
+[[process]]
+id = "STOP_B"
+command = "echo 'hi' && sleep 99999"
+apply_on = "2029-11-01T12:00:00"
+stop = {command = "sleep 5", timeout = "1s"}  # command and timeout
+
+
+
+
 
 
 # ---------------------------------------------
@@ -107,6 +125,7 @@ depends_on = ["TEST_A", "TEST_B"]
 
 
 
+
 # ---------------------------------------------
 #     TEMPLATES
 
@@ -130,7 +149,6 @@ template = "PODMAN"
 container_name = "test_b"
 image = "docker.io/ubuntu:24.04"
 command = "sleep 555"
-
 
 
 

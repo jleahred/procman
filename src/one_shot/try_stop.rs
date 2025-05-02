@@ -139,14 +139,15 @@ fn send_kill_or_command_stop(
             },
             (false, Some(command_stop)) => {
                 let timeout = command_stop
-                    .timeout
+                    .timeout()
                     .unwrap_or_else(|| std::time::Duration::from_secs(5));
                 if timeout.as_secs() > 0 {
                     println!(
                         "[{}] executing command stop {}",
-                        proc_id.0, &command_stop.command.0
+                        proc_id.0,
+                        &command_stop.command().0
                     );
-                    match run_command_with_timeout(&command_stop.command.0, timeout) {
+                    match run_command_with_timeout(&command_stop.command().0, timeout) {
                         Ok(()) => {
                             println!("[{}] Command stop succeeded for process", proc_id.0);
                         }

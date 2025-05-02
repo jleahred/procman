@@ -67,11 +67,30 @@ pub(crate) struct CommandInit {
 
 #[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Debug)]
 #[serde(deny_unknown_fields)]
-pub(crate) struct CommandStop {
-    pub(crate) command: Command,
-    #[serde(with = "humantime_serde")]
-    #[serde(default)]
-    pub(crate) timeout: Option<std::time::Duration>,
+#[serde(untagged)]
+pub(crate) enum CommandStop {
+    Simple(Command),
+    Detailed {
+        command: Command,
+        #[serde(with = "humantime_serde")]
+        #[serde(default)]
+        timeout: Option<std::time::Duration>,
+    },
+}
+
+impl CommandStop {
+    pub(crate) fn command(&self) -> &Command {
+        match self {
+            CommandStop::Simple(command) => command,
+            CommandStop::Detailed { command, .. } => command,
+        }
+    }
+    pub(crate) fn timeout(&self) -> Option<std::time::Duration> {
+        match self {
+            CommandStop::Simple(_) => None,
+            CommandStop::Detailed { timeout, .. } => *timeout,
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
