@@ -13,6 +13,7 @@ impl super::OneShot {
                         pid,
                         procman_uid,
                         stop_command,
+                        health_check,
                     } => {
                         println!("[{}] Stopping from running", proc_id.0);
 
@@ -25,6 +26,7 @@ impl super::OneShot {
                                 retries: 0,
                                 last_attempt: chrono::Local::now().naive_local(),
                                 stop_command,
+                                health_check,
                             },
                             applied_on: chrono::Local::now().naive_local(),
                         });
@@ -43,6 +45,7 @@ impl super::OneShot {
                         pid,
                         procman_uid,
                         stop_command,
+                        health_check,
                     } => {
                         println!("[{}] Stopping from init cmd", proc_id.0);
 
@@ -55,6 +58,7 @@ impl super::OneShot {
                                 retries: 0,
                                 last_attempt: chrono::Local::now().naive_local(),
                                 stop_command,
+                                health_check,
                             },
                             applied_on: chrono::Local::now().naive_local(),
                         });
@@ -66,6 +70,7 @@ impl super::OneShot {
                         retries: _,
                         last_attempt: _,
                         stop_command: _,
+                        health_check: _,
                     } => {}
                 },
                 (_proc_id, _, _) => {}

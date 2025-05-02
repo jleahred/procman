@@ -48,6 +48,9 @@ impl super::OneShot {
                                                     pid,
                                                     procman_uid,
                                                     stop_command: process_config.stop.clone(),
+                                                    health_check: process_config
+                                                        .health_check
+                                                        .clone(),
                                                 },
                                                 applied_on: chrono::Local::now().naive_local(),
                                             });

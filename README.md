@@ -3,16 +3,14 @@
 
 ## TODO
 
-* move2stop_pid_missing_on_system
-    * si tiene comando stop, tiene que pasarlo a stopping, salvo que esté en stopping y tenga un flag
-    que indique que el comando stop se ejecutó con éxito
-    * si está en stopping pero no hay configuración, tiene que ejecutar el comando stop
-    * si está en stopping pero no hay pid, tiene que ejecutar el comando stop
-    * si el comando stop ha funcionado, mover a stopped
+* fn run_command_with_timeout(command: &str, timeout: time::Duration) -> Result<(), String> {
+    * compartir
 * hay que borrar los procesos que tengan running_status pero no estén en config
     * proc_info.process_watched = None
-* comando de close/before opcional
+    * en realidad tienen  que estar en stopped hace más de 2h sin que estén en config activos
+* comando before opcional
 * configuración tiempo entre rearranques
+* ¿añadir un comando force_stop?
 * tipo de servicio adicional para podman run detatch
 * renonbrar los running por watched
 * revisar varios ficheros en paralelo (no en tui)
@@ -170,41 +168,6 @@ The process will not be marked as "running" until this command has successfully 
 It will attempt once, and in case of failure, it will transition to the `Stopping` state, initiating the stop procedure.
 
 
-#### process.stop
-
-Here you can choose whether to send a specific command to stop the process.
-
-If not specified, a `SIGTERM` will be sent, and if the process does not stop after several retries, a `SIGKILL` will be sent.
-
-You can optionally specify the timeout for executing this command.
-
-Examples:
-
-```toml
-[[process]]
-id = "A"
-command = "echo 'hi' && sleep 99999"
-apply_on = "2029-11-01T12:00:00"
-stop = "sleep 1"
-```
-
-```toml
-[[process]]
-id = "A"
-command = "echo 'hi' && sleep 99999"
-apply_on = "2029-11-01T12:00:00"
-stop = {command = "sleep 5", timeout = "1s"}
-```
-
-The safest approach is to work with the `pid`, but in some cases, this may not be possible.
-
-In such cases, the stop command can be used.
-
-For the process to transition to the `stopped` state, if a stop command is defined, it must have been successfully executed at least once.
-
-> **IMPORTANT!**  
-> The stop command must complete successfully, even if the target process is already stopped.
-
 
 
 ### Change only the command...
@@ -283,6 +246,72 @@ depends_on = ["TEST_A"]
 Circular references (and self references a a specific case) will be detected on check
 
 Also it will check horphan references
+
+
+## Not working with system PID
+
+health_check = "sleep 1"
+#### process.stop
+
+Here you can choose whether to send a specific command to stop the process.
+
+If not specified, a `SIGTERM` will be sent, and if the process does not stop after several retries, a `SIGKILL` will be sent.
+
+You can optionally specify the timeout for executing this command.
+
+Examples:
+
+```toml
+[[process]]
+id = "A"
+command = "echo 'hi' && sleep 99999"
+apply_on = "2029-11-01T12:00:00"
+stop = "sleep 1"
+```
+
+```toml
+[[process]]
+id = "A"
+command = "echo 'hi' && sleep 99999"
+apply_on = "2029-11-01T12:00:00"
+stop = {command = "sleep 5", timeout = "1s"}
+```
+
+The safest approach is to work with the `pid`, but in some cases, this may not be possible.
+
+In such cases, the stop command can be used.
+
+
+
+#### process.health_check
+
+When it is not possible to work with the system PID to verify if the process is alive, we can execute a command that will succeed if the process is alive and fail otherwise.
+
+Configuration examples:
+
+```toml
+[[process]]
+id = "A"
+command = "echo 'hi' && sleep 99999"
+apply_on = "2029-11-01T12:00:00"
+stop = "sleep 1"
+health_check = "command"
+```
+
+```toml
+[[process]]
+id = "A"
+command = "echo 'hi' && sleep 99999"
+apply_on = "2029-11-01T12:00:00"
+stop = {command = "sleep 5", timeout = "1s"}
+health_check = {command = "command", timeout = "1s"}
+```
+
+
+It is crucial that the command performs its task correctly.
+
+If it is queried and returns "ok" when the process is not alive, it will leave it stuck in the `stopping` state.
+
 
 
 ## Running podman detached

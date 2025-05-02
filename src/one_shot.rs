@@ -3,6 +3,7 @@ mod create;
 mod filter_config_by_dependencies;
 mod get_running_status;
 mod launch_process;
+mod move2stop_check_health;
 mod move2stop_modif_signature;
 mod move2stop_pid_missing_on_system;
 mod move2stopping_modif_applyon;
@@ -29,6 +30,7 @@ pub(crate) fn one_shot(full_config_filename: &str) -> Result<(), String> {
         .not_actived_config()?
         .try_stop()?
         .move2stop_pid_missing_on_system()?
+        .move2stop_check_health()?
         .move2stop_modif_signature()?
         .move2stopping_modif_applyon()?
         .run_init_cmd()  ?

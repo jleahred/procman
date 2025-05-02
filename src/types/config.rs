@@ -28,10 +28,15 @@ pub(crate) struct ProcessConfig {
     /// if the command fails, the stop process is initiated
     pub(crate) init: Option<CommandInit>,
 
-    /// Este comando se ejecutará para detener el proceso
-    /// Si no existe este comando, se lanzará primero un `SIGTERM`
-    /// Si los reintentos fallan un `SIGKILL`
+    /// This command will be executed to stop the process
+    /// If this command does not exist, a `SIGTERM` will be sent first
+    /// If retries fail, a `SIGKILL` will be sent
     pub(crate) stop: Option<CommandStop>,
+
+    /// This command will be executed to check the status of the process
+    /// If this command is defined, instead of using the pid to determine if the process is running,
+    /// this command will be used
+    pub(crate) health_check: Option<CommandCheckHealth>,
 
     #[serde(default)]
     pub(crate) schedule: Option<Schedule>,
@@ -68,6 +73,35 @@ pub(crate) struct CommandInit {
 #[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Debug)]
 #[serde(deny_unknown_fields)]
 #[serde(untagged)]
+pub(crate) enum CommandCheckHealth {
+    Simple(Command),
+    Detailed {
+        command: Command,
+        #[serde(with = "humantime_serde")]
+        #[serde(default)]
+        timeout: Option<std::time::Duration>,
+    },
+}
+impl CommandCheckHealth {
+    pub(crate) fn command(&self) -> &Command {
+        match self {
+            CommandCheckHealth::Simple(command) => command,
+            CommandCheckHealth::Detailed { command, .. } => command,
+        }
+    }
+    pub(crate) fn timeout(&self) -> std::time::Duration {
+        match self {
+            CommandCheckHealth::Simple(_) => std::time::Duration::from_secs(5),
+            CommandCheckHealth::Detailed { timeout, .. } => {
+                timeout.unwrap_or_else(|| std::time::Duration::from_secs(5))
+            }
+        }
+    }
+}
+
+#[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+#[serde(untagged)]
 pub(crate) enum CommandStop {
     Simple(Command),
     Detailed {
@@ -85,10 +119,12 @@ impl CommandStop {
             CommandStop::Detailed { command, .. } => command,
         }
     }
-    pub(crate) fn timeout(&self) -> Option<std::time::Duration> {
+    pub(crate) fn timeout(&self) -> std::time::Duration {
         match self {
-            CommandStop::Simple(_) => None,
-            CommandStop::Detailed { timeout, .. } => *timeout,
+            CommandStop::Simple(_) => std::time::Duration::from_secs(5),
+            CommandStop::Detailed { timeout, .. } => {
+                timeout.unwrap_or_else(|| std::time::Duration::from_secs(5))
+            }
         }
     }
 }

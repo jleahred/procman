@@ -2,6 +2,7 @@ use crate::types::running_status::{self, ProcessStatus, ProcessWatched};
 
 impl super::OneShot {
     pub(super) fn move2stop_pid_missing_on_system(mut self) -> Result<Self, String> {
+        // todo:0 sólo si no tiene health_check
         for (proc_id, proc_info) in self.processes.iter_mut() {
             match (
                 proc_id,
@@ -11,22 +12,29 @@ impl super::OneShot {
                 (_, _, Some(proc_watched)) => match proc_watched.status {
                     ProcessStatus::Stopped | ProcessStatus::ShouldBeRunning => {}
                     //  ----
-                    ProcessStatus::Running { pid, .. }
-                    | ProcessStatus::Stopping { pid, .. }
-                    | ProcessStatus::PendingInitCmd { pid, .. } => {
-                        // todo:0
-                        if !is_process_running(pid) {
-                            proc_info.process_watched = Some(ProcessWatched {
-                                id: proc_id.clone(),
-                                apply_on: proc_watched.apply_on,
-                                status: running_status::ProcessStatus::Stopped,
-                                applied_on: chrono::Local::now().naive_local(),
-                            });
+                    ProcessStatus::Running {
+                        pid, health_check, ..
+                    }
+                    | ProcessStatus::Stopping {
+                        pid, health_check, ..
+                    }
+                    | ProcessStatus::PendingInitCmd {
+                        pid, health_check, ..
+                    } => {
+                        if health_check == None {
+                            if !is_process_running(pid) {
+                                proc_info.process_watched = Some(ProcessWatched {
+                                    id: proc_id.clone(),
+                                    apply_on: proc_watched.apply_on,
+                                    status: running_status::ProcessStatus::Stopped,
+                                    applied_on: chrono::Local::now().naive_local(),
+                                });
 
-                            println!(
-                                "[{}] Register Stopped process with PID {}: Not running on system",
-                                proc_id.0, pid
-                            );
+                                println!(
+                                    "[{}] Register Stopped process with PID {}: Not running on system",
+                                    proc_id.0, pid
+                                );
+                            }
                         }
                     }
                 },

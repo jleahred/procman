@@ -22,6 +22,7 @@ impl super::OneShot {
                         retries,
                         last_attempt: _,
                         stop_command,
+                        health_check,
                     } => {
                         process.process_watched = Some(ProcessWatched {
                             id: proc_id.clone(),
@@ -32,6 +33,7 @@ impl super::OneShot {
                                 retries: retries + 1,
                                 last_attempt: chrono::Local::now().naive_local(),
                                 stop_command: stop_command.clone(),
+                                health_check: health_check.clone(),
                             },
                             applied_on: chrono::Local::now().naive_local(),
                         });
@@ -44,12 +46,14 @@ impl super::OneShot {
                         pid: _,
                         procman_uid: _,
                         stop_command: _,
+                        health_check: _,
                     }
                     | ProcessStatus::ShouldBeRunning {}
                     | ProcessStatus::PendingInitCmd {
                         pid: _,
                         procman_uid: _,
                         stop_command: _,
+                        health_check: _,
                     } => {}
                 },
                 (_, _, None) => {}
@@ -138,23 +142,24 @@ fn send_kill_or_command_stop(
                 }
             },
             (false, Some(command_stop)) => {
-                let timeout = command_stop
-                    .timeout()
-                    .unwrap_or_else(|| std::time::Duration::from_secs(5));
+                let timeout = command_stop.timeout();
                 if timeout.as_secs() > 0 {
                     println!(
                         "[{}] executing command stop {}",
                         proc_id.0,
                         &command_stop.command().0
                     );
-                    match run_command_with_timeout(&command_stop.command().0, timeout) {
+                    let result = match run_command_with_timeout(&command_stop.command().0, timeout)
+                    {
                         Ok(()) => {
                             println!("[{}] Command stop succeeded for process", proc_id.0);
                         }
                         Err(err) => {
                             eprintln!("[{}] Command stop failed.  {}", proc_id.0, err);
                         }
-                    }
+                    };
+                    let _ = kill_process(pid, force);
+                    result
                 } else {
                     return Err(format!(
                         "[{}] INCORRECT timeout in configuration: {}",

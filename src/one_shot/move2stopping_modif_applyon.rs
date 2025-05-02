@@ -16,6 +16,7 @@ impl super::OneShot {
                         pid,
                         procman_uid,
                         stop_command,
+                        health_check,
                     } => {
                         if process_cfg.apply_on != proc_watched.apply_on {
                             eprintln!(
@@ -31,6 +32,7 @@ impl super::OneShot {
                                     retries: 0,
                                     last_attempt: chrono::Local::now().naive_local(),
                                     stop_command,
+                                    health_check,
                                 },
                                 applied_on: chrono::Local::now().naive_local(),
                             });
@@ -40,6 +42,7 @@ impl super::OneShot {
                         pid,
                         procman_uid,
                         stop_command,
+                        health_check,
                     } => {
                         if process_cfg.apply_on != proc_watched.apply_on {
                             eprintln!(
@@ -55,6 +58,7 @@ impl super::OneShot {
                                     retries: 0,
                                     last_attempt: chrono::Local::now().naive_local(),
                                     stop_command,
+                                    health_check,
                                 },
                                 applied_on: chrono::Local::now().naive_local(),
                             });

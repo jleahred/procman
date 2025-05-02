@@ -17,6 +17,7 @@ impl super::OneShot {
                         pid,
                         procman_uid,
                         stop_command: _,
+                        health_check: _,
                     } => match &process_config.init {
                         Some(init) => {
                             println!("[{}] running init command  {}", proc_id.0, init.command.0);
@@ -31,6 +32,7 @@ impl super::OneShot {
                                             pid,
                                             procman_uid,
                                             stop_command: process_config.stop.clone(),
+                                            health_check: process_config.health_check.clone(),
                                         },
                                         applied_on: chrono::Local::now().naive_local(),
                                     });
@@ -47,6 +49,7 @@ impl super::OneShot {
                                             retries: 0,
                                             last_attempt: chrono::Local::now().naive_local(),
                                             stop_command: process_config.stop.clone(),
+                                            health_check: process_config.health_check.clone(),
                                         },
                                         applied_on: chrono::Local::now().naive_local(),
                                     });
@@ -62,6 +65,7 @@ impl super::OneShot {
                                     pid,
                                     procman_uid,
                                     stop_command: process_config.stop.clone(),
+                                    health_check: process_config.health_check.clone(),
                                 },
                                 applied_on: chrono::Local::now().naive_local(),
                             });
