@@ -10,7 +10,7 @@ impl super::OneShot {
         for (proc_id, proc_info) in self.processes.iter_mut() {
             match (
                 proc_info.process_config.as_ref(),
-                proc_info.process_running.as_ref(),
+                proc_info.process_watched.as_ref(),
             ) {
                 (Some(process_config), Some(running)) => match running.status.clone() {
                     ProcessStatus::PendingInitCmd { pid, procman_uid } => match &process_config
@@ -25,7 +25,7 @@ impl super::OneShot {
                             match run_command_with_timeout(&init_command.command.0, timeout) {
                                 Ok(()) => {
                                     println!("[{}] Init command succeeded for process", proc_id.0);
-                                    proc_info.process_running = Some(ProcessWatched {
+                                    proc_info.process_watched = Some(ProcessWatched {
                                         id: proc_id.clone(),
                                         apply_on: process_config.apply_on,
                                         status: ProcessStatus::Running { pid, procman_uid },
@@ -35,7 +35,7 @@ impl super::OneShot {
                                 Err(err) => {
                                     eprintln!("[{}] Init command failed.  {}", proc_id.0, err);
                                     eprintln!("[{}] Program process restart", proc_id.0);
-                                    proc_info.process_running = Some(ProcessWatched {
+                                    proc_info.process_watched = Some(ProcessWatched {
                                         id: proc_id.clone(),
                                         apply_on: process_config.apply_on,
                                         status: ProcessStatus::Stopping {
@@ -51,7 +51,7 @@ impl super::OneShot {
                         }
                         None => {
                             println!("[{}] not init command", proc_id.0);
-                            proc_info.process_running = Some(ProcessWatched {
+                            proc_info.process_watched = Some(ProcessWatched {
                                 id: proc_id.clone(),
                                 apply_on: process_config.apply_on,
                                 status: ProcessStatus::Running { pid, procman_uid },

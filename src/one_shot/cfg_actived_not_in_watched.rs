@@ -6,10 +6,10 @@ impl super::OneShot {
             match (
                 proc_id,
                 process.process_config.clone(),
-                process.process_running.clone(),
+                process.process_watched.clone(),
             ) {
                 (proc_id, Some(proc_cfg), None) => {
-                    process.process_running = Some(ProcessWatched {
+                    process.process_watched = Some(ProcessWatched {
                         id: proc_id.clone(),
                         apply_on: proc_cfg.apply_on,
                         status: running_status::ProcessStatus::ShouldBeRunning {},

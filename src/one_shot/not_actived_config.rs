@@ -6,13 +6,13 @@ impl super::OneShot {
             match (
                 proc_id,
                 process.process_config.clone(),
-                process.process_running.clone(),
+                process.process_watched.clone(),
             ) {
                 (proc_id, None, Some(proc_watched)) => match proc_watched.status {
                     ProcessStatus::Running { pid, procman_uid } => {
                         println!("[{}] Stopping from running", proc_id.0);
 
-                        process.process_running = Some(ProcessWatched {
+                        process.process_watched = Some(ProcessWatched {
                             id: proc_id.clone(),
                             apply_on: proc_watched.apply_on,
                             status: running_status::ProcessStatus::Stopping {
@@ -27,7 +27,7 @@ impl super::OneShot {
                     ProcessStatus::ShouldBeRunning {} => {
                         println!("[{}] Stopped from ShouldBeRunning", proc_id.0);
 
-                        process.process_running = Some(ProcessWatched {
+                        process.process_watched = Some(ProcessWatched {
                             id: proc_id.clone(),
                             apply_on: proc_watched.apply_on,
                             status: running_status::ProcessStatus::Stopped,
@@ -37,7 +37,7 @@ impl super::OneShot {
                     ProcessStatus::PendingInitCmd { pid, procman_uid } => {
                         println!("[{}] Stopping from init cmd", proc_id.0);
 
-                        process.process_running = Some(ProcessWatched {
+                        process.process_watched = Some(ProcessWatched {
                             id: proc_id.clone(),
                             apply_on: proc_watched.apply_on,
                             status: running_status::ProcessStatus::Stopping {

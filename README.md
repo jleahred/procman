@@ -3,13 +3,6 @@
 
 ## TODO
 
-* rename running for watched when pertinent
-    * running_status
-    * process_running
-    * RUNNING_STATUS_FOLDER
-    * proc_id_running
-    * running.status
-    * 
 * comando de cierre opcional
 * tipo daemon
 * configuración tiempo entre rearranques
@@ -42,6 +35,12 @@
 * run-once
 * execution retries
     * specify frequency and possibly the number of attempts
+* rename running for watched when pertinent
+    * running_status
+    * RUNNING_STATUS_FOLDER
+    * running.status
+
+
 
 ## Description
 
@@ -376,10 +375,11 @@ command = "sleep 555"
 
 ```
 
+To debug, there is a `cli` command to expand the templates. 
 
-
-
-
+```
+expand-templates  Expand config templates and show on stdout
+```
 
 
 

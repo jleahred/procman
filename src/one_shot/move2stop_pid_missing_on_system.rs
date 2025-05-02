@@ -6,7 +6,7 @@ impl super::OneShot {
             match (
                 proc_id,
                 proc_info.process_config.clone(),
-                proc_info.process_running.clone(),
+                proc_info.process_watched.clone(),
             ) {
                 (_, _, Some(proc_watched)) => match proc_watched.status {
                     ProcessStatus::Stopped | ProcessStatus::ShouldBeRunning => {}
@@ -14,7 +14,7 @@ impl super::OneShot {
                     | ProcessStatus::Stopping { pid, .. }
                     | ProcessStatus::PendingInitCmd { pid, .. } => {
                         if !is_process_running(pid) {
-                            proc_info.process_running = Some(ProcessWatched {
+                            proc_info.process_watched = Some(ProcessWatched {
                                 id: proc_id.clone(),
                                 apply_on: proc_watched.apply_on,
                                 status: running_status::ProcessStatus::Stopped,

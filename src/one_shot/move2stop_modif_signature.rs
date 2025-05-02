@@ -7,7 +7,7 @@ impl super::OneShot {
             match (
                 proc_id,
                 proc_info.process_config.clone(),
-                proc_info.process_running.clone(),
+                proc_info.process_watched.clone(),
             ) {
                 (_, _, Some(proc_watched)) => match proc_watched.status {
                     ProcessStatus::Stopped | ProcessStatus::ShouldBeRunning => {}
@@ -26,7 +26,7 @@ impl super::OneShot {
                                         "[{}] Register Stopped process different signature (not stopping process)",
                                         proc_id.0
                                     );
-                                proc_info.process_running = Some(ProcessWatched {
+                                proc_info.process_watched = Some(ProcessWatched {
                                     id: proc_id.clone(),
                                     apply_on: proc_watched.apply_on,
                                     status: running_status::ProcessStatus::Stopped,

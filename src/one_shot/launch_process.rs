@@ -14,7 +14,7 @@ impl super::OneShot {
         for (proc_id, proc_info) in self.processes.iter_mut() {
             match (
                 proc_info.process_config.as_ref(),
-                proc_info.process_running.as_ref(),
+                proc_info.process_watched.as_ref(),
             ) {
                 (Some(process_config), Some(running)) => {
                     match running.status {
@@ -41,7 +41,7 @@ impl super::OneShot {
 
                                     match procman_uid {
                                         Ok(procman_uid) => {
-                                            proc_info.process_running = Some(ProcessWatched {
+                                            proc_info.process_watched = Some(ProcessWatched {
                                                 id: proc_id.clone(),
                                                 apply_on: process_config.apply_on,
                                                 status: ProcessStatus::PendingInitCmd {

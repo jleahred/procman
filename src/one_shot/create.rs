@@ -26,20 +26,20 @@ impl super::OneShot {
                 process_id,
                 OneShotProcInfo {
                     process_config: Some(process_config),
-                    process_running: None,
+                    process_watched: None,
                 },
             );
         }
 
         for (process_id, process_watched) in running_status.processes {
             if let Some(proc_info) = result.processes.get_mut(&process_id) {
-                proc_info.process_running = Some(process_watched);
+                proc_info.process_watched = Some(process_watched);
             } else {
                 result.processes.insert(
                     process_id,
                     OneShotProcInfo {
                         process_config: None,
-                        process_running: Some(process_watched),
+                        process_watched: Some(process_watched),
                     },
                 );
             }

@@ -11,10 +11,10 @@ impl super::OneShot {
         };
 
         for (process_id, proc_info) in &self.processes {
-            if let Some(process_running) = &proc_info.process_running {
+            if let Some(process_watched) = &proc_info.process_watched {
                 running_status
                     .processes
-                    .insert(process_id.clone(), process_running.clone());
+                    .insert(process_id.clone(), process_watched.clone());
             }
         }
 

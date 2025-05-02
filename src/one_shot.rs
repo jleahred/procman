@@ -48,5 +48,5 @@ pub(crate) struct OneShot {
 #[derive(Clone, Debug)]
 pub(crate) struct OneShotProcInfo {
     process_config: Option<ProcessConfig>,
-    process_running: Option<ProcessWatched>,
+    process_watched: Option<ProcessWatched>,
 }

@@ -2,6 +2,9 @@ uid = "550e8400-e29b-41d4-a716-446655440000"
 file_format = "0"
 
 
+# ---------------------------------------------
+#     all params
+
 [[process]]
 id = "example_process"
 command = "echo 'Hello, World!' && sleep 10"
@@ -19,7 +22,8 @@ week_days = ["mon", "wed", "thu", "sun"] # optional
 command = "sleep 1"
 timeout = "3s"
 
-# -----------------------------------------
+# ---------------------------------------------
+#     all params
 
 [[process]]
 id = "example_process 2"
@@ -36,7 +40,8 @@ schedule = { start_time = "08:00:00", stop_time = "18:00:00", week_days = [
 type = "normal"
 depends_on = ["example_process"]
 
-# -----------------------------------------
+# ---------------------------------------------
+#     podman_cid
 
 [[process]]
 id = "example_process podman detached"
@@ -44,8 +49,8 @@ command = "podman run -d -ti --replace --rm --name test docker.io/ubuntu:22.04 s
 apply_on = "2024-10-01T12:00:00"
 type = "podman_cid"
 
-# -----------------------------------------
-
+# ---------------------------------------------
+#     dependencies
 
 [[process]]
 id = "TEST_A"
@@ -53,49 +58,30 @@ command = "while true; do echo $(date)  '  test a'; sleep 1; done"
 apply_on = "2029-11-01T12:20:00"
 
 [[process]]
+id = "TEST_B"
+command = "while true; do echo $(date)  '  test a'; sleep 1; done"
+apply_on = "2029-11-01T12:20:00"
+
+
+[[process]]
 id = "DEPENDS_ON_A"
 command = "while true; do echo $(date)  '  depends on a'; sleep 1; done"
 apply_on = "2029-10-01T12:20:00"
 depends_on = ["TEST_A"]
 
-[[process]]
-id = "PRUEBA_C"
-command = "echo $(date)  '  bb'; sleep 1; echo $(date)  '  bb'; sleep 1; echo $(date)  '  bb'; sleep 1"
-apply_on = "2024-11-01T12:20:00"
-
 
 [[process]]
-id = "PRUEBA_A"
-command = "ls -la && sleep infinity"
+id = "DEPENDS_ON_AB"
+command = "while true; do echo $(date)  '  depends on a'; sleep 1; done"
 apply_on = "2029-10-01T12:20:00"
-
-[[process]]
-id = "A"
-command = "ls -la && sleep infinity"
-apply_on = "2029-01-01T00:00:00"
-
-[[process]]
-id = "B"
-command = "ls -la && sleep infinity"
-apply_on = "2025-01-01T00:00:00"
-
-[[process]]
-id = "C"
-command = "ls -la && sleep infinity"
-apply_on = "2029-01-01T00:00:00"
-
-[[process]]
-id = "D"
-command = "ls -la  && sleep infinity"
-apply_on = "2029-01-01T00:00:00"
-
-[[process]]
-id = "F"
-command = "ls -la && echo 'FFFFF' && sleep infinity"
-apply_on = "2024-01-01T00:00:00"
+depends_on = ["TEST_A", "TEST_B"]
 
 
-# test circular references
+
+
+# ---------------------------------------------
+#     test circular references
+
 # [[process]]
 # id = "TEST_CIRC REF A"
 # command = "ls -la"
@@ -107,3 +93,53 @@ apply_on = "2024-01-01T00:00:00"
 # command = "ls -la"
 # apply_on = "2029-01-01T00:00:00"
 # depends_on = ["TEST_CIRC REF A"]
+
+
+# ---------------------------------------------
+#     test invalid dependencies
+
+# [[process]]
+# id = "TEST_INVALID_DEP"
+# command = "ls -la"
+# apply_on = "2029-01-01T00:00:00"
+# depends_on = ["FAKE"]
+
+
+
+
+# ---------------------------------------------
+#     TEMPLATES
+
+[[process]]
+id = "A"
+apply_on = "2029-11-01T12:00:00"
+
+[process.template]
+template = "PODMAN"
+container_name = "test_a"
+image = "docker.io/ubuntu:24.04"
+command = "sleep 444"
+
+
+[[process]]
+id = "B"
+apply_on = "2029-11-01T12:00:00"
+
+[process.template]
+template = "PODMAN"
+container_name = "test_b"
+image = "docker.io/ubuntu:24.04"
+command = "sleep 555"
+
+
+
+
+
+[[template]]
+name = "PODMAN"
+template = '''
+command = "podman run --init --rm --name {{ container_name }} {{ image }} {{ command }}"
+# before = "podman stop -t4 {{ container_name }} || true && podman rm -f {{ container_name }}"
+# health_check = "[ \"$(podman inspect --format '{{ '{{.State.Status}}' }}' {{ container_name }})\" = \"running\" ]"
+# stop = "podman stop -t4 {{ container_name }} || true && podman rm -f {{ container_name }}"
+'''
