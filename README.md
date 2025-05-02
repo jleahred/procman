@@ -3,18 +3,27 @@
 
 ## TODO
 
-* fn run_command_with_timeout(command: &str, timeout: time::Duration) -> Result<(), String> {
-    * compartir
+
+* comando before opcional
 * hay que borrar los procesos que tengan running_status pero no estén en config
     * proc_info.process_watched = None
     * en realidad tienen  que estar en stopped hace más de 2h sin que estén en config activos
-* comando before opcional
+* fn run_command_with_timeout(command: &str, timeout: time::Duration) -> Result<(), String> {
+    * compartir
 * configuración tiempo entre rearranques
 * ¿añadir un comando force_stop?
-* tipo de servicio adicional para podman run detatch
-* renonbrar los running por watched
+* cli 
+    * commands
+        * stop
+        * ...
+* add process type oneshot
 * revisar varios ficheros en paralelo (no en tui)
+
+
+
+* probar supervisor
 * eliminar los println! y eprintln! centralizar (afecta al tui)
+* renonbrar los running por watched
 * log con tiempo ejecución oneshot
 * tui
     * estructura con estado completo para renderizar
@@ -24,18 +33,12 @@
     * show depen_on and depend_from processes and navigate to them
 * ajustar el tiempo de chequeo
 * revisar la visiblidad de módulos pub(crate) pub(super)
-* groups
-* check lockfile exits and is mine
+* groups?
 * add external_depend_cmd
-* cli 
-    * commands
-        * stop
-        * ...
 * logs
 * commands arguments
     * debug
     * ...
-* add process type oneshot
 * detect zombie processes
 * run-once
 * execution retries
@@ -250,7 +253,6 @@ Also it will check horphan references
 
 ## Not working with system PID
 
-health_check = "sleep 1"
 #### process.stop
 
 Here you can choose whether to send a specific command to stop the process.
@@ -357,7 +359,7 @@ In the `Created` state, it will not respond to `run` or `--replace`, for example
 
 To ensure the system starts, one option would be to execute:
 
-```toml
+```txt
 podman stop -t4 test || true && podman rm -f test
 ```
 
@@ -370,7 +372,7 @@ health_check = "[ \"$(podman inspect --format '{{ '{{.State.Status}}' }}' test)\
 stop = "podman stop -t4 test || true && podman rm -f test"
 ```
 
-Nos quedaría algo como...
+We would end up with something like this...
 
 ```toml
 command = "podman run --init --rm --name test  docker.io/ubuntu:24.04  sleep 444"
@@ -467,7 +469,7 @@ expand-templates  Expand config templates and show on stdout
 ```mermaid
 stateDiagram-v2
     [*] --> ShouldBeRunning: cfg_actived_not_watched
-    ShouldBeRunning --> PendingInitCmd
+    ShouldBeRunning --> PendingInitCmd: run process
     PendingInitCmd --> Running: init ok
     Running --> Stopping: modif_applyon/not_active_cfg
     Stopping --> Stopped: pid gone

@@ -2,12 +2,11 @@ mod check_run_once;
 mod cli_params;
 mod one_shot;
 mod tui;
-mod types; //  experimental
+mod types;
 
 use std::process::Command;
 use std::time::Duration;
 use std::{env, thread};
-
 use types::config::Config;
 
 // run supervised
