@@ -17,7 +17,7 @@ use types::config::Config;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    if args.len() == 3 && args[1] == "--one-shot" {
+    if args.len() == 3 && args[1] == "--watch-now" {
         if let Err(err) = watch_now::watch_now(&args[2]) {
             eprintln!("CRITIC: canceling check   {}", err);
             std::process::exit(1);
@@ -90,7 +90,7 @@ fn run_in_loop(prc_cfg_file_name: &str) {
             //Command::new(current_exe)
             Command::new("setsid")
             .arg(current_exe)
-            .args(["--one-shot", prc_cfg_file_name])
+            .args(["--watch-now", prc_cfg_file_name])
             .spawn()
             .expect("CRITIC: Can't spawn child process");
 
@@ -99,7 +99,7 @@ fn run_in_loop(prc_cfg_file_name: &str) {
         if child.wait().is_err() {
             eprintln!("Error waiting for child process");
         } else {
-            println!("Shot finished");
+            println!("Watch finished");
         }
     }
 }

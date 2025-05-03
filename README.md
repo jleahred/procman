@@ -4,7 +4,7 @@
 ## TODO
 
 
-* cambiar oneshot por watch_now
+* la configuración se tiene que leer en main y pasar a los dos módulos
 * comandos oneshot
 * comando before opcional
 * hay que borrar los procesos que tengan running_status pero no estén en config

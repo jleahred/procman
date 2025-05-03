@@ -3,7 +3,7 @@ use crate::types::config::Config;
 use crate::types::running_status::load_running_status;
 use std::collections::HashMap;
 
-use super::OneShotProcInfo;
+use super::WatchNowProcInfo;
 
 const RUNNING_STATUS_FOLDER: &str = "/tmp/procman";
 
@@ -24,7 +24,7 @@ impl super::WatchNow {
         for (process_id, process_config) in active_procs_by_config.0 {
             result.processes.insert(
                 process_id,
-                OneShotProcInfo {
+                WatchNowProcInfo {
                     process_config: Some(process_config),
                     process_watched: None,
                 },
@@ -37,7 +37,7 @@ impl super::WatchNow {
             } else {
                 result.processes.insert(
                     process_id,
-                    OneShotProcInfo {
+                    WatchNowProcInfo {
                         process_config: None,
                         process_watched: Some(process_watched),
                     },

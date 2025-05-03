@@ -46,11 +46,11 @@ pub(crate) struct WatchNow {
     persist_path: String,
     pub(crate) file_uid: ConfigUid,
     pub(crate) _file_format: String,
-    pub(crate) processes: HashMap<ProcessId, OneShotProcInfo>,
+    pub(crate) processes: HashMap<ProcessId, WatchNowProcInfo>,
 }
 
 #[derive(Clone, Debug)]
-pub(crate) struct OneShotProcInfo {
+pub(crate) struct WatchNowProcInfo {
     process_config: Option<ProcessConfig>,
     process_watched: Option<ProcessWatched>,
 }
