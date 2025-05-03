@@ -31,8 +31,8 @@ impl super::OneShot {
                             applied_on: chrono::Local::now().naive_local(),
                         });
                     }
-                    ProcessStatus::ShouldBeRunning {} => {
-                        println!("[{}] Stopped from ShouldBeRunning", proc_id.0);
+                    ProcessStatus::ShouldBeRunning | ProcessStatus::PendingBeforeCmd => {
+                        println!("[{}] Stopped from {:?}", proc_id.0, &proc_watched.status);
 
                         process.process_watched = Some(ProcessWatched {
                             id: proc_id.clone(),

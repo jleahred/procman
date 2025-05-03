@@ -15,7 +15,7 @@ impl super::OneShot {
                         process.process_watched = Some(ProcessWatched {
                             id: proc_id.clone(),
                             apply_on: proc_watched.apply_on,
-                            status: running_status::ProcessStatus::ShouldBeRunning,
+                            status: running_status::ProcessStatus::PendingBeforeCmd,
                             applied_on: chrono::Local::now().naive_local(),
                         });
                     }

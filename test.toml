@@ -7,9 +7,10 @@ file_format = "0"
 [[process]]
 id = "A"
 command = "echo 'hi' && sleep 99999"
-apply_on = "2029-11-01T12:00:00"
+apply_on = "2024-11-01T12:00:00"
 stop = "sleep 1"
 health_check = "sleep 1"
+before = "sleep 1"
 
 
 # [[process]]

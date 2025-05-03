@@ -20,7 +20,16 @@ week_days = ["mon", "wed", "thu", "sun"] # optional
 
 [process.init] # optional
 command = "sleep 1"
-timeout = "3s"
+timeout = "3s"  # optional
+
+[process.before] # optional
+command = "sleep 1"
+timeout = "3s"  # optional
+
+[process.health_check] # optional
+command = "sleep 1"
+timeout = "3s"  # optional
+
 
 # ---------------------------------------------
 #     all params
@@ -29,7 +38,9 @@ timeout = "3s"
 id = "example_process 2"
 command = "echo 'Starting process...'"
 apply_on = "2029-10-01T12:00:00"
-init = { command = "curl -I http://localhost:8080", timeout = "3s" }
+init = { command = "sleep 1", timeout = "3s" }
+before = { command = "sleep 1", timeout = "3s" }
+health_check = { command = "curl -I http://localhost:8080", timeout = "3s" }
 schedule = { start_time = "08:00:00", stop_time = "18:00:00", week_days = [
     "mon",
     "tue",

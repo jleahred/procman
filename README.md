@@ -4,6 +4,8 @@
 ## TODO
 
 
+* cambiar oneshot por watch_now
+* comandos oneshot
 * comando before opcional
 * hay que borrar los procesos que tengan running_status pero no estén en config
     * proc_info.process_watched = None
@@ -111,14 +113,17 @@ week_days = ["mon", "wed", "thu", "sun"] # optional
 # week_days = "mon-fri"   # also valid
 # week_days = "all"   # also valid
 
-[process.init]
-command = "ls"
-timeout = "30s"   # optional
+[process.init] # optional
+command = "sleep 1"
+timeout = "3s"  # optional
 
-# init fail example
-# [process.init]  # optional
-# command = "sleep 4"
-# timeout = "5s"   # optional
+[process.before] # optional
+command = "sleep 1"
+timeout = "3s"  # optional
+
+[process.health_check] # optional
+command = "sleep 1"
+timeout = "3s"  # optional
 ```
 
 ### Example of a process configuration 2
@@ -127,8 +132,10 @@ timeout = "30s"   # optional
 [[process]]
 id = "example_process 2"
 command = "echo 'Starting process...'"
-apply_on = "2024-10-01T12:00:00"
-init = { command = "curl -I http://localhost:8080", timeout = "5s" }
+apply_on = "2029-10-01T12:00:00"
+init = { command = "sleep 1", timeout = "3s" }
+before = { command = "sleep 1", timeout = "3s" }
+health_check = { command = "curl -I http://localhost:8080", timeout = "3s" }
 schedule = { start_time = "08:00:00", stop_time = "18:00:00", week_days = [
     "mon",
     "tue",
@@ -137,7 +144,7 @@ schedule = { start_time = "08:00:00", stop_time = "18:00:00", week_days = [
     "fri",
 ] }
 type = "normal"
-depends_on = ["another_process"]
+depends_on = ["example_process"]
 ```
 
 #### process.id
@@ -170,6 +177,30 @@ The process will not be marked as "running" until this command has successfully 
 
 It will attempt once, and in case of failure, it will transition to the `Stopping` state, initiating the stop procedure.
 
+```toml
+[[process]]
+id = "example_process 2"
+command = "echo 'Starting process...'"
+apply_on = "2029-10-01T12:00:00"
+init = { command = "sleep 1", timeout = "3s" }
+```
+
+
+#### process.before
+
+Aquí se puede poner un comando a ejecutar antes que el comando de este proceso
+
+Si la ejecución de before tiene éxito, continuará con los pasos para ejecutar este proceso
+
+Si la ejecución de before falla, pasará a stopped y se reintentará más tarde
+
+```toml
+[[process]]
+id = "example_process 2"
+command = "echo 'Starting process...'"
+apply_on = "2029-10-01T12:00:00"
+before = { command = "sleep 1", timeout = "3s" }
+```
 
 
 

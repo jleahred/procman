@@ -28,12 +28,13 @@ pub(crate) struct ProcessWatched {
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub(crate) enum ProcessStatus {
+    PendingBeforeCmd,
     ShouldBeRunning,
     PendingInitCmd {
         pid: u32,
+        health_check: Option<CommandCheckHealth>,
         procman_uid: String,
         stop_command: Option<CommandStop>,
-        health_check: Option<CommandCheckHealth>,
     },
     Running {
         pid: u32,
@@ -43,11 +44,11 @@ pub(crate) enum ProcessStatus {
     },
     Stopping {
         pid: u32,
+        health_check: Option<CommandCheckHealth>,
         procman_uid: String,
         retries: u32,
         last_attempt: NaiveDateTime,
         stop_command: Option<CommandStop>,
-        health_check: Option<CommandCheckHealth>,
     },
     Stopped,
 }

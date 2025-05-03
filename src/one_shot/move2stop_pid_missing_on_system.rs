@@ -10,7 +10,9 @@ impl super::OneShot {
                 proc_info.process_watched.clone(),
             ) {
                 (_, _, Some(proc_watched)) => match proc_watched.status {
-                    ProcessStatus::Stopped | ProcessStatus::ShouldBeRunning => {}
+                    ProcessStatus::Stopped
+                    | ProcessStatus::ShouldBeRunning
+                    | ProcessStatus::PendingBeforeCmd => {}
                     //  ----
                     ProcessStatus::Running {
                         pid, health_check, ..

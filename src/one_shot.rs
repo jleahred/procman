@@ -8,6 +8,7 @@ mod move2stop_modif_signature;
 mod move2stop_pid_missing_on_system;
 mod move2stopping_modif_applyon;
 mod not_actived_config;
+mod run_before_cmd;
 mod run_init_cmd;
 mod save;
 mod stopped_with_active_cfg;
@@ -33,7 +34,8 @@ pub(crate) fn one_shot(full_config_filename: &str) -> Result<(), String> {
         .move2stop_check_health()?
         .move2stop_modif_signature()?
         .move2stopping_modif_applyon()?
-        .run_init_cmd()  ?
+        .run_init_cmd()?
+        .run_before_cmd()?
         // .save()
         ;
     Ok(())

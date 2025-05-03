@@ -11,6 +11,7 @@ impl super::OneShot {
                 (_, Some(process_cfg), Some(proc_watched)) => match proc_watched.status {
                     ProcessStatus::Stopped
                     | ProcessStatus::ShouldBeRunning
+                    | ProcessStatus::PendingBeforeCmd
                     | ProcessStatus::Stopping { .. } => {}
                     ProcessStatus::Running {
                         pid,

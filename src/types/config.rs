@@ -28,6 +28,13 @@ pub(crate) struct ProcessConfig {
     /// if the command fails, the stop process is initiated
     pub(crate) init: Option<CommandInit>,
 
+    /// This command will be executed before the process is started
+    /// This command will be executed only once
+    /// If this command fails, the process will not be started
+    /// If this command is not defined, the process will be started directly
+    /// If this command is defined, the process will be started only if this command succeeds
+    pub(crate) before: Option<CommandBefore>,
+
     /// This command will be executed to stop the process
     /// If this command does not exist, a `SIGTERM` will be sent first
     /// If retries fail, a `SIGKILL` will be sent
@@ -68,6 +75,35 @@ pub(crate) struct CommandInit {
     pub(crate) command: Command,
     #[serde(with = "humantime_serde")]
     pub(crate) timeout: Option<std::time::Duration>,
+}
+
+#[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+#[serde(untagged)]
+pub(crate) enum CommandBefore {
+    Simple(Command),
+    Detailed {
+        command: Command,
+        #[serde(with = "humantime_serde")]
+        #[serde(default)]
+        timeout: Option<std::time::Duration>,
+    },
+}
+impl CommandBefore {
+    pub(crate) fn command(&self) -> &Command {
+        match self {
+            CommandBefore::Simple(command) => command,
+            CommandBefore::Detailed { command, .. } => command,
+        }
+    }
+    pub(crate) fn timeout(&self) -> std::time::Duration {
+        match self {
+            CommandBefore::Simple(_) => std::time::Duration::from_secs(10),
+            CommandBefore::Detailed { timeout, .. } => {
+                timeout.unwrap_or_else(|| std::time::Duration::from_secs(10))
+            }
+        }
+    }
 }
 
 #[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Debug)]

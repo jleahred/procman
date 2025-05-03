@@ -3,77 +3,61 @@ use crate::types::running_status::ProcessWatched;
 use std::process::Command;
 use std::thread;
 use std::time;
-use std::time::Duration;
 
 impl super::OneShot {
-    pub(super) fn run_init_cmd(mut self) -> Result<Self, String> {
+    pub(super) fn run_before_cmd(mut self) -> Result<Self, String> {
         for (proc_id, proc_info) in self.processes.iter_mut() {
             match (
                 proc_info.process_config.as_ref(),
                 proc_info.process_watched.as_ref(),
             ) {
                 (Some(process_config), Some(running)) => match running.status.clone() {
-                    ProcessStatus::PendingInitCmd {
-                        pid,
-                        procman_uid,
-                        stop_command: _,
-                        health_check: _,
-                    } => match &process_config.init {
-                        Some(init) => {
-                            println!("[{}] running init command  {}", proc_id.0, init.command.0);
-                            let timeout = init.timeout.unwrap_or(Duration::from_secs(10));
-                            match run_command_with_timeout(&init.command.0, timeout) {
+                    ProcessStatus::PendingBeforeCmd => match &process_config.before {
+                        Some(before) => {
+                            println!(
+                                "[{}] running before command  {}",
+                                proc_id.0,
+                                before.command().0
+                            );
+                            let timeout = before.timeout();
+                            match run_command_with_timeout(&before.command().0, timeout) {
                                 Ok(()) => {
-                                    println!("[{}] Init command succeeded for process", proc_id.0);
+                                    println!(
+                                        "[{}] Before command succeeded for process",
+                                        proc_id.0
+                                    );
                                     proc_info.process_watched = Some(ProcessWatched {
                                         id: proc_id.clone(),
                                         apply_on: process_config.apply_on,
-                                        status: ProcessStatus::Running {
-                                            pid,
-                                            procman_uid,
-                                            stop_command: process_config.stop.clone(),
-                                            health_check: process_config.health_check.clone(),
-                                        },
+                                        status: ProcessStatus::ShouldBeRunning,
                                         applied_on: chrono::Local::now().naive_local(),
                                     });
                                 }
                                 Err(err) => {
-                                    eprintln!("[{}] Init command failed.  {}", proc_id.0, err);
-                                    eprintln!("[{}] Program process restart", proc_id.0);
+                                    eprintln!("[{}] Before command failed.  {}", proc_id.0, err);
+                                    eprintln!("[{}] Moving to stopped", proc_id.0);
                                     proc_info.process_watched = Some(ProcessWatched {
                                         id: proc_id.clone(),
                                         apply_on: process_config.apply_on,
-                                        status: ProcessStatus::Stopping {
-                                            pid,
-                                            procman_uid,
-                                            retries: 0,
-                                            last_attempt: chrono::Local::now().naive_local(),
-                                            stop_command: process_config.stop.clone(),
-                                            health_check: process_config.health_check.clone(),
-                                        },
+                                        status: ProcessStatus::Stopped,
                                         applied_on: chrono::Local::now().naive_local(),
                                     });
                                 }
                             }
                         }
                         None => {
-                            println!("[{}] not init command", proc_id.0);
+                            println!("[{}] not before command", proc_id.0);
                             proc_info.process_watched = Some(ProcessWatched {
                                 id: proc_id.clone(),
                                 apply_on: process_config.apply_on,
-                                status: ProcessStatus::Running {
-                                    pid,
-                                    procman_uid,
-                                    stop_command: process_config.stop.clone(),
-                                    health_check: process_config.health_check.clone(),
-                                },
+                                status: ProcessStatus::ShouldBeRunning,
                                 applied_on: chrono::Local::now().naive_local(),
                             });
                         }
                     },
                     //  ---------
-                    ProcessStatus::PendingBeforeCmd
-                    | ProcessStatus::ShouldBeRunning
+                    ProcessStatus::ShouldBeRunning
+                    | ProcessStatus::PendingInitCmd { .. }
                     | ProcessStatus::Running { .. }
                     | ProcessStatus::Stopping { .. }
                     | ProcessStatus::Stopped { .. } => {}

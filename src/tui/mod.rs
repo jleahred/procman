@@ -188,6 +188,16 @@ fn render_status<'a>(merged_info: &MergedProcessInfoPerProcess) -> Cell<'a> {
                     (Color::Yellow, "pending init".to_string())
                 }
             }
+            crate::types::running_status::ProcessStatus::PendingBeforeCmd => {
+                if merged_info.config_active.is_none() {
+                    (Color::Yellow, "pending before cmd".to_string())
+                } else {
+                    return Cell::from(Span::styled(
+                        "pending before cmd",
+                        Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+                    ));
+                }
+            }
         },
         None => {
             if merged_info.config_active.is_none() {

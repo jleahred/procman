@@ -12,12 +12,12 @@ impl super::OneShot {
                     process.process_watched = Some(ProcessWatched {
                         id: proc_id.clone(),
                         apply_on: proc_cfg.apply_on,
-                        status: running_status::ProcessStatus::ShouldBeRunning {},
+                        status: running_status::ProcessStatus::PendingBeforeCmd,
                         applied_on: chrono::Local::now().naive_local(),
                     });
 
                     println!(
-                        "[{}] Process is not watched, adding to running status should be running",
+                        "[{}] Process is not watched, status moved to should be running",
                         proc_id.0
                     );
                 }

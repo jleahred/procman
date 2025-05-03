@@ -41,6 +41,7 @@ impl super::OneShot {
                         send_kill_or_command_stop(retries, proc_id, pid, stop_command)?;
                     }
                     //  ------
+                    ProcessStatus::PendingBeforeCmd => {}
                     ProcessStatus::Stopped
                     | ProcessStatus::Running {
                         pid: _,
@@ -48,7 +49,7 @@ impl super::OneShot {
                         stop_command: _,
                         health_check: _,
                     }
-                    | ProcessStatus::ShouldBeRunning {}
+                    | ProcessStatus::ShouldBeRunning
                     | ProcessStatus::PendingInitCmd {
                         pid: _,
                         procman_uid: _,

@@ -14,11 +14,11 @@ impl super::OneShot {
                 proc_info.process_watched.clone(),
             ) {
                 (_, _, Some(proc_watched)) => match proc_watched.status {
-                    ProcessStatus::Stopped | ProcessStatus::ShouldBeRunning => {}
+                    ProcessStatus::Stopped
+                    | ProcessStatus::ShouldBeRunning
+                    | ProcessStatus::PendingBeforeCmd => {}
                     //  ----
-                    ProcessStatus::Running { health_check, .. }
-                    | ProcessStatus::Stopping { health_check, .. }
-                    | ProcessStatus::PendingInitCmd { health_check, .. } => {
+                    ProcessStatus::Stopping { health_check, .. } => {
                         if let Some(health_check) = health_check {
                             // Check if the process is running using the health_check command
                             if !is_process_running(&health_check) {
@@ -30,7 +30,44 @@ impl super::OneShot {
                                 });
 
                                 println!(
-                                    "[{}] Register Stopped process by health_check command {}",
+                                    "[{}] Register Stopped (in stopping state) by health_check command {}",
+                                    proc_id.0,
+                                    health_check.command().0
+                                );
+                            }
+                        }
+                    }
+                    ProcessStatus::Running {
+                        pid,
+                        procman_uid,
+                        stop_command,
+                        health_check,
+                    }
+                    | ProcessStatus::PendingInitCmd {
+                        pid,
+                        procman_uid,
+                        stop_command,
+                        health_check,
+                    } => {
+                        if let Some(health_check) = health_check {
+                            // Check if the process is running using the health_check command
+                            if !is_process_running(&health_check) {
+                                proc_info.process_watched = Some(ProcessWatched {
+                                    id: proc_id.clone(),
+                                    apply_on: proc_watched.apply_on,
+                                    status: running_status::ProcessStatus::Stopping {
+                                        pid,
+                                        health_check: Some(health_check.clone()),
+                                        procman_uid,
+                                        stop_command: stop_command.clone(),
+                                        retries: 0,
+                                        last_attempt: chrono::Local::now().naive_local(),
+                                    },
+                                    applied_on: chrono::Local::now().naive_local(),
+                                });
+
+                                println!(
+                                    "[{}] Move to stopping by health_check command {}",
                                     proc_id.0,
                                     health_check.command().0
                                 );

@@ -72,6 +72,7 @@ impl super::OneShot {
                             }
                         }
                         ProcessStatus::Running { .. }
+                        | ProcessStatus::PendingBeforeCmd
                         | ProcessStatus::PendingInitCmd { .. }
                         | ProcessStatus::Stopping { .. }
                         | ProcessStatus::Stopped { .. } => {}
