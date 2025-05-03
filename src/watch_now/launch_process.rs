@@ -12,72 +12,38 @@ use std::{
 impl super::WatchNow {
     pub(super) fn launch_process(mut self) -> Result<Self, String> {
         for (proc_id, proc_info) in self.processes.iter_mut() {
-            match (
-                proc_info.process_config.as_ref(),
-                proc_info.process_watched.as_ref(),
-            ) {
-                (Some(process_config), Some(running)) => {
-                    match running.status {
-                        ProcessStatus::ShouldBeRunning {} => {
+            let process_config = proc_info.process_config.clone();
+            let process_watched = proc_info.process_watched.clone();
+            match (process_config, process_watched) {
+                (Some(process_config), Some(running)) => match running.status {
+                    ProcessStatus::ShouldBeRunning => match process_config.process_type {
+                        ProcessType::Fake => {
+                            continue;
+                        }
+                        ProcessType::Normal => {
                             println!(
                                 "[{}] Running process     apply_on: {}",
                                 proc_id.0, process_config.apply_on
                             );
-
-                            let runproc = match process_config.process_type {
-                                ProcessType::Fake => run_process,
-                                ProcessType::Normal => run_process,
-                                ProcessType::PodmanCid => run_process_podman,
-                            };
-
-                            match runproc(&process_config.command) {
-                                Ok(pid) => {
-                                    println!(
-                                        "[{}] Launched process  with PID: {}   apply_on: {}",
-                                        process_config.id.0, pid, process_config.apply_on
-                                    );
-
-                                    let procman_uid = get_cmdline(pid); // TODO: Mejorar con un UUID único
-
-                                    match procman_uid {
-                                        Ok(procman_uid) => {
-                                            proc_info.process_watched = Some(ProcessWatched {
-                                                id: proc_id.clone(),
-                                                apply_on: process_config.apply_on,
-                                                status: ProcessStatus::PendingInitCmd {
-                                                    pid,
-                                                    procman_uid,
-                                                    stop_command: process_config.stop.clone(),
-                                                    health_check: process_config
-                                                        .health_check
-                                                        .clone(),
-                                                },
-                                                applied_on: chrono::Local::now().naive_local(),
-                                            });
-                                        }
-                                        Err(error) => {
-                                            eprintln!(
-                                                "[{}] Failed to launch process (getting cmd line): {}",
-                                                process_config.id.0, error
-                                            )
-                                        }
-                                    }
-                                }
-                                Err(e) => {
-                                    eprintln!(
-                                        "[{}] Failed to launch process: {}",
-                                        process_config.id.0, e
-                                    )
-                                }
-                            }
+                            run_process(run_process_normal, &process_config, proc_info);
                         }
-                        ProcessStatus::Running { .. }
-                        | ProcessStatus::PendingBeforeCmd
-                        | ProcessStatus::PendingInitCmd { .. }
-                        | ProcessStatus::Stopping { .. }
-                        | ProcessStatus::Stopped { .. } => {}
-                    }
-                }
+                        ProcessType::PodmanCid => {
+                            println!(
+                                "[{}] Running process     apply_on: {}",
+                                proc_id.0, process_config.apply_on
+                            );
+                            run_process(run_process_podman, &process_config, proc_info);
+                        }
+                        ProcessType::OneShot => {
+                            run_process(run_process_normal, &process_config, proc_info);
+                        }
+                    },
+                    ProcessStatus::Running { .. }
+                    | ProcessStatus::PendingBeforeCmd
+                    | ProcessStatus::PendingInitCmd { .. }
+                    | ProcessStatus::Stopping { .. }
+                    | ProcessStatus::Stopped { .. } => {}
+                },
                 _ => {}
             }
         }
@@ -85,7 +51,49 @@ impl super::WatchNow {
     }
 }
 
-fn run_process(command: &config::Command) -> Result<u32, io::Error> {
+fn run_process(
+    runproc: fn(&config::Command) -> Result<u32, io::Error>,
+    process_config: &config::ProcessConfig,
+    proc_info: &mut WatchNowProcInfo,
+) {
+    match runproc(&process_config.command) {
+        Ok(pid) => {
+            println!(
+                "[{}] Launched process  with PID: {}   apply_on: {}",
+                process_config.id.0, pid, process_config.apply_on
+            );
+
+            let procman_uid = get_cmdline(pid); // TODO: Mejorar con un UUID único
+
+            match procman_uid {
+                Ok(procman_uid) => {
+                    proc_info.process_watched = Some(ProcessWatched {
+                        id: process_config.id.clone(),
+                        apply_on: process_config.apply_on,
+                        status: ProcessStatus::PendingInitCmd {
+                            pid,
+                            procman_uid,
+                            stop_command: process_config.stop.clone(),
+                            health_check: process_config.health_check.clone(),
+                        },
+                        applied_on: chrono::Local::now().naive_local(),
+                    });
+                }
+                Err(error) => {
+                    eprintln!(
+                        "[{}] Failed to launch process (getting cmd line): {}",
+                        process_config.id.0, error
+                    )
+                }
+            }
+        }
+        Err(e) => {
+            eprintln!("[{}] Failed to launch process: {}", process_config.id.0, e)
+        }
+    }
+}
+
+fn run_process_normal(command: &config::Command) -> Result<u32, io::Error> {
     let child: Child = Command::new("sh")
         .arg("-c")
         .arg(&command.0)
@@ -126,6 +134,8 @@ fn run_process_podman(command: &config::Command) -> Result<u32, io::Error> {
 }
 
 use std::str;
+
+use super::WatchNowProcInfo;
 
 fn get_real_pid_podman_detach(container_id: &str) -> std::io::Result<u32> {
     println!(

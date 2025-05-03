@@ -181,6 +181,9 @@ pub(crate) struct Schedule {
 pub(crate) enum ProcessType {
     Normal,
     Fake,
+    /// When the process ends, it does not restart
+    #[serde(rename = "one-shot")]
+    OneShot,
     /// podman running detached and returning the cid
     /// podman run -d
     /// With cid, we will look for real process pid on system

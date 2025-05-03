@@ -1,6 +1,7 @@
 mod cfg_actived_not_in_watched;
 mod create;
 mod filter_config_by_dependencies;
+mod filter_config_one_shot;
 mod get_running_status;
 mod launch_process;
 mod move2stop_check_health;
@@ -25,6 +26,7 @@ pub(crate) fn watch_now(full_config_filename: &str) -> Result<(), String> {
 
     WatchNow::create(&full_config_filename)?
         .filter_config_by_dependencies()?
+        .filter_config_one_shot()?
         .cfg_actived_not_in_watched()?
         .stopped_with_active_cfg()?
         .launch_process()?
