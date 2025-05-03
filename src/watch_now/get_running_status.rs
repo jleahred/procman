@@ -1,7 +1,7 @@
 use crate::types::running_status::RunningStatus;
 use std::collections::HashMap;
 
-impl super::OneShot {
+impl super::WatchNow {
     pub(super) fn get_running_status(&self) -> RunningStatus {
         let mut running_status = RunningStatus {
             file_uid: self.file_uid.clone(),

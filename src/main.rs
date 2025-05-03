@@ -1,6 +1,6 @@
 mod check_run_once;
 mod cli_params;
-mod one_shot;
+mod watch_now;
 mod tui;
 mod types;
 
@@ -18,7 +18,7 @@ use types::config::Config;
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() == 3 && args[1] == "--one-shot" {
-        if let Err(err) = one_shot::one_shot(&args[2]) {
+        if let Err(err) = watch_now::watch_now(&args[2]) {
             eprintln!("CRITIC: canceling check   {}", err);
             std::process::exit(1);
         }

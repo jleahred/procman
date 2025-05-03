@@ -7,7 +7,7 @@ use super::OneShotProcInfo;
 
 const RUNNING_STATUS_FOLDER: &str = "/tmp/procman";
 
-impl super::OneShot {
+impl super::WatchNow {
     pub(super) fn create(full_config_filename: &str) -> Result<Self, String> {
         let config: Config =
             Config::read_from_file(full_config_filename).map_err(|e| e.0.to_string())?;

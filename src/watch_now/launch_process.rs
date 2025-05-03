@@ -9,7 +9,7 @@ use std::{
     time::Duration,
 };
 
-impl super::OneShot {
+impl super::WatchNow {
     pub(super) fn launch_process(mut self) -> Result<Self, String> {
         for (proc_id, proc_info) in self.processes.iter_mut() {
             match (

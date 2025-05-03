@@ -5,7 +5,7 @@ use std::thread;
 use std::time;
 use std::time::Duration;
 
-impl super::OneShot {
+impl super::WatchNow {
     pub(super) fn run_init_cmd(mut self) -> Result<Self, String> {
         for (proc_id, proc_info) in self.processes.iter_mut() {
             match (

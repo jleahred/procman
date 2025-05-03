@@ -1,6 +1,6 @@
 use crate::types::running_status::{self, ProcessStatus, ProcessWatched};
 
-impl super::OneShot {
+impl super::WatchNow {
     pub(super) fn move2stop_pid_missing_on_system(mut self) -> Result<Self, String> {
         // todo:0 sólo si no tiene health_check
         for (proc_id, proc_info) in self.processes.iter_mut() {

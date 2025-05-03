@@ -1,6 +1,6 @@
 use crate::types::running_status::{self, ProcessWatched};
 
-impl super::OneShot {
+impl super::WatchNow {
     pub(super) fn cfg_actived_not_in_watched(mut self) -> Result<Self, String> {
         for (proc_id, process) in self.processes.iter_mut() {
             match (

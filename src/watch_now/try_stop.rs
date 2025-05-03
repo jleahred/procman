@@ -6,7 +6,7 @@ use crate::types::{
 };
 use nix::errno::Errno;
 
-impl super::OneShot {
+impl super::WatchNow {
     pub(super) fn try_stop(mut self) -> Result<Self, String> {
         for (proc_id, process) in self.processes.iter_mut() {
             match (

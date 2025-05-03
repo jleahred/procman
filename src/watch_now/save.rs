@@ -1,4 +1,4 @@
-use super::OneShot;
+use super::WatchNow;
 use crate::types::config::ProcessId;
 use crate::types::running_status::{ProcessWatched, RunningStatus};
 use std::collections::HashMap;
@@ -11,8 +11,8 @@ lazy_static::lazy_static! {
     static ref PREVIOUS_SAVED: Mutex<(HashMap<ProcessId, ProcessWatched>, Option<chrono::NaiveDateTime>)> = Mutex::new((HashMap::new(), None));
 }
 
-impl super::OneShot {
-    pub(super) fn save(self: OneShot) -> Result<Self, String> {
+impl super::WatchNow {
+    pub(super) fn save(self: WatchNow) -> Result<Self, String> {
         let mut previous_saved = PREVIOUS_SAVED
             .lock()
             .map_err(|err| format!("Failed to acquire lock: {}", err))?;

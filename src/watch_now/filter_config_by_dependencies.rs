@@ -2,7 +2,7 @@ use crate::types::config::ProcessId;
 use crate::types::running_status::ProcessStatus;
 use std::collections::HashSet;
 
-impl super::OneShot {
+impl super::WatchNow {
     pub(super) fn filter_config_by_dependencies(mut self) -> Result<Self, String> {
         let proc_id_watched = {
             let mut proc_id_watched = HashSet::<ProcessId>::new();

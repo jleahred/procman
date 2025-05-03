@@ -4,7 +4,7 @@ use std::process::Command;
 use std::thread;
 use std::time;
 
-impl super::OneShot {
+impl super::WatchNow {
     pub(super) fn run_before_cmd(mut self) -> Result<Self, String> {
         for (proc_id, proc_info) in self.processes.iter_mut() {
             match (
