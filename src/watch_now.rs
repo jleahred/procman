@@ -18,7 +18,7 @@ mod try_stop;
 use crate::types::config::ProcessId;
 use crate::types::config::{ConfigUid, ProcessConfig};
 use crate::types::running_status::ProcessWatched;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 pub(crate) fn watch_now(full_config_filename: &str) -> Result<(), String> {
     println!("\n--------------------------------------------------------------------------------");
@@ -44,15 +44,15 @@ pub(crate) fn watch_now(full_config_filename: &str) -> Result<(), String> {
 }
 
 #[derive(Debug)]
-pub(crate) struct WatchNow {
+pub(super) struct WatchNow {
     persist_path: String,
     pub(crate) file_uid: ConfigUid,
     pub(crate) _file_format: String,
-    pub(crate) processes: HashMap<ProcessId, WatchNowProcInfo>,
+    pub(crate) processes: BTreeMap<ProcessId, WatchNowProcInfo>,
 }
 
 #[derive(Clone, Debug)]
 pub(crate) struct WatchNowProcInfo {
-    process_config: Option<ProcessConfig>,
-    process_watched: Option<ProcessWatched>,
+    pub(crate) process_config: Option<ProcessConfig>,
+    pub(crate) process_watched: Option<ProcessWatched>,
 }

@@ -1,327 +1,186 @@
 //  experimental!!!
+mod render_processes;
 
-use crate::types::config::{Config, ProcessConfig, ProcessId};
+use std::collections::BTreeMap;
+use std::io;
+use std::time::Duration;
+
+use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use crossterm::execute;
 use crossterm::terminal::EnterAlternateScreen;
-use crossterm::{
-    event::{self},
-    terminal::LeaveAlternateScreen,
-};
+use ratatui::{backend::CrosstermBackend, Terminal};
 use ratatui::{
-    backend::CrosstermBackend,
-    layout::Constraint,
-    style::{Color, Modifier, Style},
-    text::Span,
-    widgets::{Block, Borders, Cell, Row, Table, Wrap},
-    Terminal,
-};
-use ratatui::{
-    layout::{Direction, Layout},
-    text::Spans,
-    widgets::Paragraph,
-};
-use std::{
-    collections::{BTreeMap, HashMap},
-    fs, io,
-    path::Path,
+    layout::Margin,
+    style::Stylize,
+    symbols::{self},
+    text::Line,
+    widgets::{Block, TableState},
+    DefaultTerminal, Frame,
 };
 
-pub(crate) fn run(cfg_file_name: &str) -> Result<(), Box<dyn std::error::Error>> {
-    let stdout = io::stdout(); //  todo:
+use crate::types::config::{ProcessConfig, ProcessId};
+use crate::watch_now::WatchNow;
+use crate::Config;
+
+pub(crate) fn run(cfg_file_name: &str) -> io::Result<()> {
+    //     let stdout = io::stdout(); //  todo:
+    let stdout = io::stdout();
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
-
     crossterm::terminal::enable_raw_mode()?;
     execute!(io::stdout(), EnterAlternateScreen)?;
-    // terminal.clear()?;
 
-    let log_lines: Vec<String> = vec!["test line1".to_string(), "test line2".to_string()];
-    let scroll_offset = 0;
+    let processes =
+        Processes::create(&cfg_file_name).map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
 
-    let result = (|| -> Result<(), Box<dyn std::error::Error>> {
-        use std::time::Duration;
+    // let table_state: TableState = {
+    //     let mut result = TableState::default();
+    //     result.select(Some(10));
+    //     result
+    // };
 
-        loop {
-            let status = get_status(&cfg_file_name);
-
-            terminal.draw(|f| {
-                let chunks = Layout::default()
-                    .direction(Direction::Vertical)
-                    .margin(0)
-                    .constraints([
-                        Constraint::Min(1),
-                        Constraint::Length(5),
-                        Constraint::Length(1),
-                    ])
-                    .split(f.size());
-
-                // tabla de procesos
-                let merged_process_info: BTreeMap<ProcessId, MergedProcessInfoPerProcess> =
-                    match status {
-                        Ok(ref s) => s.merged_process_info.clone(),
-                        Err(_) => BTreeMap::new(),
-                    };
-
-                let cfg_file_name = match &status {
-                    Ok(ref s) => &s.cfg_file_name,
-                    Err(_) => &format!("error config file {} or persistent file", cfg_file_name),
-                };
-                f.render_widget(
-                    render_table(&cfg_file_name, &merged_process_info),
-                    chunks[0],
-                );
-
-                // zona de texto con scroll
-                let paragraph = Paragraph::new(
-                    log_lines
-                        .iter()
-                        .map(|line| Spans::from(Span::raw(line.clone())))
-                        .collect::<Vec<Spans>>(),
-                )
-                .block(Block::default().borders(Borders::ALL).title("out/err"))
-                .scroll((scroll_offset as u16, 0))
-                .wrap(Wrap { trim: false });
-                f.render_widget(paragraph, chunks[1]);
-
-                // footer con teclas
-                let footer = Paragraph::new(Spans::from(vec![
-                    Span::raw("Press "),
-                    Span::styled("q", Style::default().add_modifier(Modifier::BOLD)),
-                    Span::raw(" or "),
-                    Span::styled("Ctrl+C", Style::default().add_modifier(Modifier::BOLD)),
-                    Span::raw(" to exit."),
-                ]));
-                f.render_widget(footer, chunks[2]);
-            })?;
-            // terminal.draw(|f| {
-            //     f.render_widget(render_table(&processes), f.size());
-            // })?;
-
-            // wait for 1 second before refreshing the screen
-            if crossterm::event::poll(Duration::from_secs(1))? {
-                if let event::Event::Key(key) = event::read()? {
-                    if key.code == event::KeyCode::Char('q')
-                        || key.code == event::KeyCode::Char('c')
-                            && key.modifiers.contains(event::KeyModifiers::CONTROL)
-                    {
-                        break;
-                    }
-                }
-            }
-        }
-
-        Ok(())
-    })();
-
-    crossterm::terminal::disable_raw_mode()?;
-    execute!(io::stdout(), LeaveAlternateScreen)?;
-    // terminal.clear()?;
-
-    result
-}
-
-fn render_table<'a>(
-    full_file_name: &str,
-    info: &'a BTreeMap<ProcessId, MergedProcessInfoPerProcess>,
-) -> Table<'a> {
-    let render_rows: Vec<Row> = render_rows(&info);
-
-    Table::new(render_rows)
-        .header(
-            Row::new(vec!["Process ID", "Status", "Command (in config)"])
-                .style(Style::default().add_modifier(Modifier::BOLD)),
-        )
-        .block(
-            Block::default()
-                .title(format!(" Process Table for   [{}] ", full_file_name))
-                .borders(Borders::ALL),
-        )
-        .widths(&[
-            Constraint::Length(20),
-            Constraint::Length(20),
-            Constraint::Percentage(60),
-        ])
-}
-
-fn render_rows<'a>(info: &'a BTreeMap<ProcessId, MergedProcessInfoPerProcess>) -> Vec<Row<'a>> {
-    info.iter()
-        .map(|(proc_id, merged_info)| render_row(proc_id, merged_info))
-        .collect()
-}
-
-fn render_row<'a>(_proc_id: &ProcessId, merged_info: &'a MergedProcessInfoPerProcess) -> Row<'a> {
-    Row::new(vec![
-        Cell::from(merged_info.process_id.0.clone()),
-        Cell::from(render_status(merged_info)),
-        Cell::from(render_command(merged_info)),
-    ])
-}
-
-fn render_status<'a>(merged_info: &MergedProcessInfoPerProcess) -> Cell<'a> {
-    let (st_color, st_text) = match merged_info.running {
-        Some(ref running) => match running.status {
-            crate::types::running_status::ProcessStatus::Running { .. } => {
-                if merged_info.config_active.is_none() {
-                    return Cell::from(Span::styled(
-                        "running",
-                        Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
-                    ));
-                }
-                (Color::Green, "running".to_string())
-            }
-            crate::types::running_status::ProcessStatus::ShouldBeRunning { .. } => {
-                (Color::Yellow, "should be running".to_string())
-            }
-            crate::types::running_status::ProcessStatus::Stopped { .. } => {
-                (Color::Yellow, "stopped".to_string())
-            }
-            crate::types::running_status::ProcessStatus::Stopping { .. } => {
-                (Color::Yellow, "stopping".to_string())
-            }
-            crate::types::running_status::ProcessStatus::PendingInitCmd { .. } => {
-                if merged_info.config_active.is_none() {
-                    return Cell::from(Span::styled(
-                        "pending init",
-                        Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
-                    ));
-                } else {
-                    (Color::Yellow, "pending init".to_string())
-                }
-            }
-            crate::types::running_status::ProcessStatus::PendingBeforeCmd => {
-                if merged_info.config_active.is_none() {
-                    (Color::Yellow, "pending before cmd".to_string())
-                } else {
-                    return Cell::from(Span::styled(
-                        "pending before cmd",
-                        Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
-                    ));
-                }
-            }
-        },
-        None => {
-            if merged_info.config_active.is_none() {
-                return Cell::from(Span::styled(
-                    "not running",
-                    Style::default().fg(Color::Yellow),
-                ));
-            } else {
-                return Cell::from(Span::styled(
-                    "not running",
-                    Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
-                ));
-            }
-        }
+    let mut app = App {
+        cfg_file_name: cfg_file_name.to_string(),
+        processes,
+        exit: false,
+        debug: None,
+        table_state: TableState::default(),
     };
 
-    Cell::from(Span::styled(st_text, Style::default().fg(st_color)))
+    let app_result = app.run(&mut terminal);
+
+    ratatui::restore();
+
+    app_result
 }
 
-fn render_command<'a>(merged_info: &MergedProcessInfoPerProcess) -> Cell<'a> {
-    match merged_info.config_active {
-        Some(ref config) => {
-            return Cell::from(Span::styled(
-                config.command.0.clone(),
-                Style::default().fg(Color::White),
-            ));
-        }
-        None => {
-            if merged_info.in_config {
-                return Cell::from(Span::styled(
-                    "not activated",
-                    Style::default().fg(Color::Yellow),
-                ));
-            } else {
-            }
-            return Cell::from(Span::styled(
-                "not in config",
-                Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
-            ));
-        }
-    }
-}
-
-struct Status {
+// #[derive(Debug)]
+struct App {
     cfg_file_name: String,
-    merged_process_info: BTreeMap<ProcessId, MergedProcessInfoPerProcess>,
+    processes: Processes,
+    exit: bool,
+    debug: Option<String>,
+
+    table_state: TableState,
 }
 
-#[derive(Clone)]
-struct MergedProcessInfoPerProcess {
-    process_id: ProcessId,
-    in_config: bool,
-    config_active: Option<crate::types::config::ProcessConfig>,
-    running: Option<crate::types::running_status::ProcessWatched>,
+impl App {
+    /// runs the application's main loop until the user quits
+    fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
+        use std::time::{Duration, Instant};
+        let mut last_update = Instant::now();
+
+        while !self.exit {
+            terminal.draw(|frame| self.draw(frame))?;
+            self.handle_events()?;
+
+            // Actualiza self.processes cada 2 segundos
+            if last_update.elapsed() >= Duration::from_secs(2) {
+                self.processes = Processes::create(&self.cfg_file_name)
+                    .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+                last_update = Instant::now();
+            }
+
+            // Pequeño sleep para evitar uso excesivo de CPU
+            // std::thread::sleep(Duration::from_millis(100));
+        }
+        Ok(())
+    }
+
+    fn draw(&mut self, frame: &mut Frame) {
+        let title = Line::from(format!("  [ {} ]  ", self.cfg_file_name)).centered();
+        let bottom = Line::from(vec![
+            " Quit ".into(),
+            "<Q> ".blue().bold(),
+            "<Ctrl-c> ".blue().bold(),
+            // "<Esc> ".blue().bold(),
+        ])
+        .centered();
+        frame.render_widget(
+            Block::bordered()
+                .border_set(symbols::border::ROUNDED)
+                .title(title)
+                .title_bottom(bottom),
+            frame.area(),
+        );
+
+        self.render_processes(frame, frame.area().inner(Margin::new(1, 1)));
+    }
+
+    /// updates the application's state based on user input
+    fn handle_events(&mut self) -> io::Result<()> {
+        match event::poll(Duration::from_millis(2000))? {
+            true => {
+                match event::read()? {
+                    // it's important to check that the event is a key press event as
+                    // crossterm also emits key release and repeat events on Windows.
+                    Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
+                        self.handle_key_event_main(key_event)
+                    }
+                    _ => {}
+                };
+            }
+            false => {}
+        }
+        // match event::read()? {
+        //     // it's important to check that the event is a key press event as
+        //     // crossterm also emits key release and repeat events on Windows.
+        //     Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
+        //         self.handle_key_event_main(key_event)
+        //     }
+        //     _ => {}
+        // };
+        Ok(())
+    }
+
+    fn handle_key_event_main(&mut self, key_event: KeyEvent) {
+        match key_event.code {
+            // KeyCode::Esc => self.exit = true,
+            KeyCode::Char('q') => self.exit = true,
+            KeyCode::Char('c') if key_event.modifiers.contains(event::KeyModifiers::CONTROL) => {
+                self.exit = true
+            }
+            KeyCode::Char('d') => {
+                if self.debug.is_some() {
+                    self.debug = None
+                } else {
+                    self.debug = Some(format!("{:#?}", self.processes.watched))
+                }
+            }
+            _ => self.handle_key_event_processes(key_event),
+        }
+    }
 }
 
-fn get_status(cfg_file_name: &str) -> Result<Status, String> {
-    let relative_path = Path::new(cfg_file_name);
-    let absolute_path = fs::canonicalize(&relative_path)
-        .map_err(|_| format!("Failed to get absolute path for {}", cfg_file_name))?;
-    Ok(Status {
-        cfg_file_name: absolute_path.display().to_string(),
-        merged_process_info: get_process_info(cfg_file_name)?,
-    })
-}
+impl Processes {
+    pub(crate) fn create(full_config_filename: &str) -> Result<Self, String> {
+        let watched = WatchNow::create(full_config_filename)?;
+        let mut only_in_config = BTreeMap::new();
 
-fn get_process_info(
-    cfg_file_name: &str,
-) -> Result<BTreeMap<ProcessId, MergedProcessInfoPerProcess>, String> {
-    let cfg = Config::read_from_file(&cfg_file_name).map_err(|e| e.0.to_string())?;
-    let running_status =
-        crate::types::running_status::load_running_status("/tmp/procman/", &cfg.uid)?;
-    Ok(get_process_info_merged(&cfg, &running_status.processes))
-}
-
-fn get_process_info_merged(
-    config: &Config,
-    running_status: &HashMap<ProcessId, crate::types::running_status::ProcessWatched>,
-) -> BTreeMap<ProcessId, MergedProcessInfoPerProcess> {
-    let mut result: BTreeMap<ProcessId, MergedProcessInfoPerProcess> = config
-        .process
-        .iter()
-        .map(|process| {
-            (
-                process.id.clone(),
-                MergedProcessInfoPerProcess {
-                    process_id: process.id.clone(),
-                    in_config: true,
-                    config_active: None,
-                    running: None,
-                },
-            )
+        let config: Config =
+            Config::read_from_file(full_config_filename).map_err(|e| e.0.to_string())?;
+        for process_config in config.process.iter() {
+            if !watched.processes.contains_key(&process_config.id) {
+                only_in_config
+                    .entry(process_config.id.clone())
+                    .or_insert_with(|| process_config.clone());
+            }
+        }
+        Ok(Self {
+            watched,
+            only_in_config,
         })
-        .collect();
-
-    for (proc_id, process_watched) in running_status {
-        result
-            .entry(proc_id.clone())
-            .or_insert_with(|| MergedProcessInfoPerProcess {
-                process_id: proc_id.clone(),
-                in_config: false,
-                config_active: None,
-                running: Some(process_watched.clone()),
-            });
     }
+}
 
-    let map_proc_id_active_cfg: BTreeMap<ProcessId, ProcessConfig> = config
-        .get_active_procs_by_config()
-        .0
-        .values()
-        .map(|process| (process.id.clone(), process.clone()))
-        .collect();
+// #[derive(Clone)]
+pub(super) struct Processes {
+    watched: WatchNow,
+    pub(crate) only_in_config: BTreeMap<ProcessId, ProcessConfig>,
+}
 
-    for (proc_id, process) in map_proc_id_active_cfg.iter() {
-        if let Some(entry) = result.get_mut(proc_id) {
-            entry.config_active = Some(process.clone());
-        }
+impl Processes {
+    fn len(&self) -> usize {
+        self.watched.processes.len() + self.only_in_config.len()
     }
-
-    for (proc_id, process_watched) in running_status {
-        if let Some(entry) = result.get_mut(proc_id) {
-            entry.running = Some(process_watched.clone());
-        }
-    }
-
-    result
 }

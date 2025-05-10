@@ -1,14 +1,14 @@
 // use crate::read_config_file::read_config_file_or_panic;
 use crate::types::config::Config;
 use crate::types::running_status::load_running_status;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use super::WatchNowProcInfo;
 
 const RUNNING_STATUS_FOLDER: &str = "/tmp/procman";
 
 impl super::WatchNow {
-    pub(super) fn create(full_config_filename: &str) -> Result<Self, String> {
+    pub(crate) fn create(full_config_filename: &str) -> Result<Self, String> {
         let config: Config =
             Config::read_from_file(full_config_filename).map_err(|e| e.0.to_string())?;
         let running_status = load_running_status(RUNNING_STATUS_FOLDER, &config.uid)?;
@@ -18,7 +18,7 @@ impl super::WatchNow {
             persist_path: RUNNING_STATUS_FOLDER.to_string(),
             file_uid: config.uid,
             _file_format: "0".to_string(),
-            processes: HashMap::new(),
+            processes: BTreeMap::new(),
         };
 
         for (process_id, process_config) in active_procs_by_config.0 {

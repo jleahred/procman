@@ -3,10 +3,6 @@
 
 ## TODO
 
-
-* la configuración se tiene que leer en main y pasar a los dos módulos
-* comandos oneshot
-* comando before opcional
 * hay que borrar los procesos que tengan running_status pero no estén en config
     * proc_info.process_watched = None
     * en realidad tienen  que estar en stopped hace más de 2h sin que estén en config activos
@@ -18,7 +14,6 @@
     * commands
         * stop
         * ...
-* add process type oneshot
 * revisar varios ficheros en paralelo (no en tui)
 
 
