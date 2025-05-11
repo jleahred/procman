@@ -1,5 +1,6 @@
 //  experimental!!!
-mod render_processes;
+mod choose_file;
+mod processes;
 
 use std::collections::BTreeMap;
 use std::io;
@@ -8,6 +9,7 @@ use std::time::Duration;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use crossterm::execute;
 use crossterm::terminal::EnterAlternateScreen;
+use ratatui::widgets::ListState;
 use ratatui::{backend::CrosstermBackend, Terminal};
 use ratatui::{
     layout::Margin,
@@ -22,6 +24,15 @@ use crate::types::config::{ProcessConfig, ProcessId};
 use crate::watch_now::WatchNow;
 use crate::Config;
 
+// #[derive(Debug)]
+struct App {
+    cfg_file_name: String,
+    processes: Processes,
+    choose_file: ChooseFile,
+    exit: bool,
+    debug: Option<String>,
+}
+
 pub(crate) fn run(cfg_file_name: &str) -> io::Result<()> {
     //     let stdout = io::stdout(); //  todo:
     let stdout = io::stdout();
@@ -30,21 +41,18 @@ pub(crate) fn run(cfg_file_name: &str) -> io::Result<()> {
     crossterm::terminal::enable_raw_mode()?;
     execute!(io::stdout(), EnterAlternateScreen)?;
 
-    let processes =
-        Processes::create(&cfg_file_name).map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
-
-    // let table_state: TableState = {
-    //     let mut result = TableState::default();
-    //     result.select(Some(10));
-    //     result
-    // };
+    let processes = Processes::create(&cfg_file_name, TableState::default())
+        .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
 
     let mut app = App {
         cfg_file_name: cfg_file_name.to_string(),
         processes,
+        choose_file: ChooseFile {
+            files: choose_file::available_files(),
+            wstate: ListState::default(),
+        },
         exit: false,
         debug: None,
-        table_state: TableState::default(),
     };
 
     let app_result = app.run(&mut terminal);
@@ -52,16 +60,6 @@ pub(crate) fn run(cfg_file_name: &str) -> io::Result<()> {
     ratatui::restore();
 
     app_result
-}
-
-// #[derive(Debug)]
-struct App {
-    cfg_file_name: String,
-    processes: Processes,
-    exit: bool,
-    debug: Option<String>,
-
-    table_state: TableState,
 }
 
 impl App {
@@ -72,13 +70,15 @@ impl App {
 
         while !self.exit {
             terminal.draw(|frame| self.draw(frame))?;
-            self.handle_events()?;
+            self.handle_events(Duration::from_secs(2))?;
 
             // Actualiza self.processes cada 2 segundos
             if last_update.elapsed() >= Duration::from_secs(2) {
-                self.processes = Processes::create(&self.cfg_file_name)
-                    .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+                self.processes =
+                    Processes::create(&self.cfg_file_name, self.processes.table_state.clone())
+                        .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
                 last_update = Instant::now();
+                self.choose_file.files = choose_file::available_files();
             }
 
             // Pequeño sleep para evitar uso excesivo de CPU
@@ -104,12 +104,12 @@ impl App {
             frame.area(),
         );
 
-        self.render_processes(frame, frame.area().inner(Margin::new(1, 1)));
+        //self.render_processes(frame, frame.area().inner(Margin::new(1, 1)));
+        self.render_choose_files(frame);
     }
 
-    /// updates the application's state based on user input
-    fn handle_events(&mut self) -> io::Result<()> {
-        match event::poll(Duration::from_millis(2000))? {
+    fn handle_events(&mut self, timeout: Duration) -> io::Result<()> {
+        match event::poll(timeout)? {
             true => {
                 match event::read()? {
                     // it's important to check that the event is a key press event as
@@ -122,14 +122,6 @@ impl App {
             }
             false => {}
         }
-        // match event::read()? {
-        //     // it's important to check that the event is a key press event as
-        //     // crossterm also emits key release and repeat events on Windows.
-        //     Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
-        //         self.handle_key_event_main(key_event)
-        //     }
-        //     _ => {}
-        // };
         Ok(())
     }
 
@@ -147,13 +139,19 @@ impl App {
                     self.debug = Some(format!("{:#?}", self.processes.watched))
                 }
             }
-            _ => self.handle_key_event_processes(key_event),
+            _ => {
+                // self.handle_key_event_processes(key_event),
+                self.handle_key_event_choose_file(key_event);
+            }
         }
     }
 }
 
 impl Processes {
-    pub(crate) fn create(full_config_filename: &str) -> Result<Self, String> {
+    pub(crate) fn create(
+        full_config_filename: &str,
+        table_state: TableState,
+    ) -> Result<Self, String> {
         let watched = WatchNow::create(full_config_filename)?;
         let mut only_in_config = BTreeMap::new();
 
@@ -169,6 +167,7 @@ impl Processes {
         Ok(Self {
             watched,
             only_in_config,
+            table_state,
         })
     }
 }
@@ -177,10 +176,17 @@ impl Processes {
 pub(super) struct Processes {
     watched: WatchNow,
     pub(crate) only_in_config: BTreeMap<ProcessId, ProcessConfig>,
+
+    table_state: TableState,
 }
 
 impl Processes {
     fn len(&self) -> usize {
         self.watched.processes.len() + self.only_in_config.len()
     }
+}
+
+struct ChooseFile {
+    files: Vec<String>,
+    wstate: ListState,
 }

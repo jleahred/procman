@@ -9,7 +9,7 @@ use ratatui::{layout::Rect, style::Stylize, widgets::HighlightSpacing, Frame};
 
 impl super::App {
     pub(super) fn render_processes(&mut self, frame: &mut Frame, area: Rect) {
-        let header_style = Style::default().add_modifier(Modifier::BOLD);
+        let header_style = Style::default();
         let selected_row_style = Style::default().add_modifier(Modifier::REVERSED);
         let selected_col_style = Style::default();
         let selected_cell_style = Style::default()
@@ -112,48 +112,48 @@ impl super::App {
             // ]))
             // .bg(self.colors.buffer_bg)
             .highlight_spacing(HighlightSpacing::Always);
-        frame.render_stateful_widget(t, area, &mut self.table_state);
+        frame.render_stateful_widget(t, area, &mut self.processes.table_state);
     }
 
     pub(super) fn handle_key_event_processes(&mut self, key_event: KeyEvent) {
         match key_event.code {
             KeyCode::Esc => {
-                self.table_state.select(None);
+                self.processes.table_state.select(None);
             }
             KeyCode::Down => {
-                if let Some(selected) = self.table_state.selected() {
+                if let Some(selected) = self.processes.table_state.selected() {
                     let next = (selected + 1) % self.processes.len();
-                    self.table_state.select(Some(next));
+                    self.processes.table_state.select(Some(next));
                 } else {
-                    self.table_state.select(Some(0));
+                    self.processes.table_state.select(Some(0));
                 }
             }
             KeyCode::Up => {
-                if let Some(selected) = self.table_state.selected() {
+                if let Some(selected) = self.processes.table_state.selected() {
                     let prev = if selected == 0 {
                         self.processes.len() - 1
                     } else {
                         selected - 1
                     };
-                    self.table_state.select(Some(prev));
+                    self.processes.table_state.select(Some(prev));
                 } else {
-                    self.table_state.select(Some(0));
+                    self.processes.table_state.select(Some(0));
                 }
             }
             KeyCode::PageDown => {
-                if let Some(selected) = self.table_state.selected() {
+                if let Some(selected) = self.processes.table_state.selected() {
                     let next = (selected + 10) % self.processes.len();
-                    self.table_state.select(Some(next));
+                    self.processes.table_state.select(Some(next));
                 } else {
-                    self.table_state.select(Some(0));
+                    self.processes.table_state.select(Some(0));
                 }
             }
             KeyCode::PageUp => {
-                if let Some(selected) = self.table_state.selected() {
+                if let Some(selected) = self.processes.table_state.selected() {
                     let next = (selected - 10) % self.processes.len();
-                    self.table_state.select(Some(next));
+                    self.processes.table_state.select(Some(next));
                 } else {
-                    self.table_state.select(Some(0));
+                    self.processes.table_state.select(Some(0));
                 }
             }
             _ => {}
