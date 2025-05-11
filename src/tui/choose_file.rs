@@ -41,9 +41,9 @@ impl super::App {
         mut choose_file: super::ChooseFile,
     ) -> super::ChooseFile {
         match key_event.code {
-            KeyCode::Esc => {
-                choose_file.wstate.select(None);
-            }
+            // KeyCode::Esc => {
+            //     choose_file.wstate.select(None);
+            // }
             KeyCode::Down => {
                 if let Some(selected) = choose_file.wstate.selected() {
                     let next = (selected + 1) % choose_file.len();
@@ -67,18 +67,7 @@ impl super::App {
             KeyCode::Enter => {
                 if let Some(selected) = choose_file.wstate.selected() {
                     let selected_file = choose_file.files[selected].clone();
-                    let selected_file = format!("/tmp/procman/{}", selected_file);
-                    let content =
-                        fs::read_to_string(selected_file).unwrap_or_else(|_| String::new());
-                    let original_file_full_path = content
-                        .lines()
-                        .find(|line| line.starts_with("original_file_full_path"))
-                        .and_then(|line| line.split('=').nth(1))
-                        .map(|value| value.trim().trim_matches('"'))
-                        .unwrap_or("unknown");
-
-                    self.full_config_filename =
-                        Some(std::path::PathBuf::from(original_file_full_path));
+                    self.full_config_filename = Some(std::path::PathBuf::from(selected_file));
                 }
             }
             _ => {}
@@ -88,7 +77,7 @@ impl super::App {
 }
 
 pub(super) fn available_files() -> Vec<String> {
-    let mut files = match fs::read_dir("/tmp/procman") {
+    let files = match fs::read_dir("/tmp/procman") {
         Ok(entries) => entries
             .filter_map(|entry| entry.ok())
             .filter_map(|entry| {
@@ -101,14 +90,10 @@ pub(super) fn available_files() -> Vec<String> {
                     None
                 }
             })
+            .map(|file| get_cfg_file_from_running(&file))
             .collect(),
         Err(_) => vec![],
     };
-    files.push("default.toml".to_string());
-    files.push("default.toml".to_string());
-    files.push("default.toml".to_string());
-    files.push("default.toml".to_string());
-    files.push("default.toml".to_string());
     files
 }
 
@@ -128,4 +113,17 @@ impl super::ChooseFile {
     //     self.files = available_files();
     //     self
     // }
+}
+
+fn get_cfg_file_from_running(selected_file: &str) -> String {
+    let selected_file = format!("/tmp/procman/{}", selected_file);
+    let content = fs::read_to_string(selected_file).unwrap_or_else(|_| String::new());
+    let original_file_full_path = content
+        .lines()
+        .find(|line| line.starts_with("original_file_full_path"))
+        .and_then(|line| line.split('=').nth(1))
+        .map(|value| value.trim().trim_matches('"'))
+        .unwrap_or("unknown");
+
+    original_file_full_path.to_string()
 }

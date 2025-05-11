@@ -53,6 +53,7 @@ pub(crate) fn run() -> io::Result<()> {
         },
         exit: false,
     };
+    app.choose_file.wstate.select(Some(0));
 
     let app_result = app.run(&mut terminal);
 

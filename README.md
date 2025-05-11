@@ -3,6 +3,10 @@
 
 ## TODO
 
+* tui f para configurar otro fichero
+* tui eventos -> comandos
+* tui mostrar la úlitma actualización de procesos, si es muy antigua, en rojo
+* delete old files, delete old stopped
 * hay que borrar los procesos que tengan running_status pero no estén en config
     * proc_info.process_watched = None
     * en realidad tienen  que estar en stopped hace más de 2h sin que estén en config activos
