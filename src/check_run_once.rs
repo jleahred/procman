@@ -1,7 +1,7 @@
 use fs2::FileExt;
 use std::fs;
 use std::fs::File;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 pub(super) fn check(lock_file_name: &str) -> Result<File, String> {
     //  todo: /tmp/procman here???
@@ -23,12 +23,12 @@ pub(super) fn check(lock_file_name: &str) -> Result<File, String> {
     Ok(file) // keep the lock until the file is dropped
 }
 
-pub(super) fn remove_lock_file(locked: &File, lock_file_name: &str) {
+pub(super) fn remove_lock_file(locked: &File, lock_file_name: &PathBuf) {
     if let Err(e) = FileExt::unlock(locked) {
         eprintln!("Failed to unlock file: {}", e);
     }
 
-    let full_path = format!("/tmp/procman/{}", lock_file_name);
+    let full_path = format!("/tmp/procman/{}", lock_file_name.to_str().unwrap_or("?"));
     let path = Path::new(&full_path);
 
     if let Err(e) = std::fs::remove_file(&path) {

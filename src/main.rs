@@ -4,6 +4,7 @@ mod watch_now;
 mod tui;
 mod types;
 
+use std::path::PathBuf;
 use std::process::Command;
 use std::time::Duration;
 use std::{env, thread};
@@ -18,7 +19,12 @@ use types::config::Config;
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() == 3 && args[1] == "--watch-now" {
-        if let Err(err) = watch_now::watch_now(&args[2]) {
+        let full_proc_file_name = &PathBuf::from(&args[2]).canonicalize().unwrap_or_else(|err| {
+            eprintln!("CRITIC: Failed to get absolute path: {}", err);
+            std::process::exit(1);
+        });
+
+        if let Err(err) = watch_now::watch_now(full_proc_file_name) {
             eprintln!("CRITIC: canceling check   {}", err);
             std::process::exit(1);
         }
@@ -46,18 +52,17 @@ fn main() {
                     eprintln!("CRITIC: {}", err);
                     std::process::exit(1);
                 });
-            println!("Running: {}", processes_filename);
             run_in_loop(&processes_filename);
 
             check_run_once::remove_lock_file(&locked, &processes_filename); //  higienic, not critic
         }
         cli_params::Commands::Check { processes_filename } => {
-            println!("Checking: {}", processes_filename);
+            println!("Checking: {}", processes_filename.to_str().unwrap_or("?"));
             let _ = Config::read_from_file(&processes_filename).unwrap_or_else(|err| {
                 eprintln!("CRITIC: Failed to read config file: {}", err.0);
                 std::process::exit(1);
             });
-            println!("Check config OK: {}", processes_filename);
+            println!("Check config OK: {}", processes_filename.to_str().unwrap_or("?"));
         }
         cli_params::Commands::Uid => {
             println!(
@@ -66,31 +71,32 @@ fn main() {
             );
             return;
         }
-        cli_params::Commands::Tui { processes_filename } => {
-            tui::run(&processes_filename).unwrap();
+        cli_params::Commands::Tui  => {
+            tui::run().unwrap();
         }
         cli_params::Commands::ExpandTemplates { processes_filename } => {
-            println!("Expanding templates: {}", processes_filename);
+            println!("Expanding templates: {}", processes_filename.to_str().unwrap_or("?"));
             let expanded = Config::read_and_expand(&processes_filename).unwrap_or_else(|err| {
                 eprintln!("CRITIC: Failed to read config file: {}", err.0);
                 std::process::exit(1);
             });
-            println!("Expanded config: {} .....................................", processes_filename);
+            println!("Expanded config: {} .....................................", processes_filename.to_str().unwrap_or("?"));
             println!("{}", expanded.0);
         }
     }
 }
 
-fn run_in_loop(prc_cfg_file_name: &str) {
+fn run_in_loop(full_proc_file_name: &PathBuf) {
     loop {
         let current_exe = env::current_exe().expect("CRITIC: Can't get current executable path");
+
 
         // Create a new process
         let mut child = 
             //Command::new(current_exe)
             Command::new("setsid")
             .arg(current_exe)
-            .args(["--watch-now", prc_cfg_file_name])
+            .args(["--watch-now", full_proc_file_name.to_str().unwrap_or("?")])
             .spawn()
             .expect("CRITIC: Can't spawn child process");
 

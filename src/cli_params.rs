@@ -1,4 +1,4 @@
-use std::env;
+use std::{env, path::PathBuf};
 
 use clap::{Parser, Subcommand};
 #[derive(Parser)]
@@ -14,22 +14,20 @@ pub(crate) enum Commands {
     /// Execute with the given processes configuration file
     Run {
         /// configuration file to use. toml format with info about the processes to run
-        processes_filename: String,
+        processes_filename: PathBuf,
     },
     /// check the given processes configuration file
     Check {
         /// configuration file to use. toml format with info about the processes to run
-        processes_filename: String,
+        processes_filename: PathBuf,
     },
     /// Generate a UID to be used in the config file
-    Tui {
-        processes_filename: String,
-    },
+    Tui,
     Uid,
     /// Expand config templates and show on stdout
     ExpandTemplates {
         /// configuration file to use. toml format with info about the processes to run
-        processes_filename: String,
+        processes_filename: PathBuf,
     },
 }
 

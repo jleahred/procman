@@ -742,6 +742,7 @@ dependencies = [
  "lazy_static",
  "minijinja",
  "nix 0.26.4",
+ "once_cell",
  "procfs",
  "ratatui",
  "regex",

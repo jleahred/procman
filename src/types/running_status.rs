@@ -4,7 +4,7 @@ use crate::types::config::{CommandStop, ConfigUid, ProcessId};
 use chrono::NaiveDateTime;
 pub(crate) use imp::load_running_status;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::{collections::HashMap, path::PathBuf};
 
 use super::config::CommandCheckHealth;
 
@@ -12,6 +12,7 @@ use super::config::CommandCheckHealth;
 pub(crate) struct RunningStatus {
     // pub(crate) persist_path: String,
     pub(crate) file_uid: ConfigUid,
+    pub(crate) original_file_full_path: PathBuf,
     #[serde(rename = "file_format")]
     pub(crate) _file_format: String,
     pub(crate) last_update: NaiveDateTime,

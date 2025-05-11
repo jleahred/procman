@@ -41,10 +41,15 @@ impl super::WatchNow {
         if let Err(err) = fs::create_dir_all(&file_path) {
             return Err(format!(
                 "Failed to create directory on {}: {}",
-                &file_path, err
+                file_path.to_str().unwrap_or("?"),
+                err
             ));
         }
-        let full_path = format!("{}/{}.toml", file_path, running_status.file_uid.0);
+        let full_path = format!(
+            "{}/{}.toml",
+            file_path.to_str().unwrap_or("?"),
+            running_status.file_uid.0
+        );
         let full_path_tmp = format!("{}.tmp", full_path);
 
         let toml_content = toml::to_string(&running_status)

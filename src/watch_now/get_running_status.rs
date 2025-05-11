@@ -5,6 +5,7 @@ impl super::WatchNow {
     pub(super) fn get_running_status(&self) -> RunningStatus {
         let mut running_status = RunningStatus {
             file_uid: self.file_uid.clone(),
+            original_file_full_path: self.original_file_full_path.clone(),
             _file_format: "0".to_string(),
             processes: HashMap::new(),
             last_update: chrono::Local::now().naive_local(),

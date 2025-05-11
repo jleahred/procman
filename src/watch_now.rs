@@ -19,8 +19,9 @@ use crate::types::config::ProcessId;
 use crate::types::config::{ConfigUid, ProcessConfig};
 use crate::types::running_status::ProcessWatched;
 use std::collections::BTreeMap;
+use std::path::PathBuf;
 
-pub(crate) fn watch_now(full_config_filename: &str) -> Result<(), String> {
+pub(crate) fn watch_now(full_config_filename: &PathBuf) -> Result<(), String> {
     println!("\n--------------------------------------------------------------------------------");
     println!("Checking... {}\n", chrono::Local::now());
 
@@ -45,8 +46,9 @@ pub(crate) fn watch_now(full_config_filename: &str) -> Result<(), String> {
 
 #[derive(Debug)]
 pub(super) struct WatchNow {
-    persist_path: String,
+    persist_path: PathBuf,
     pub(crate) file_uid: ConfigUid,
+    pub(crate) original_file_full_path: PathBuf,
     pub(crate) _file_format: String,
     pub(crate) processes: BTreeMap<ProcessId, WatchNowProcInfo>,
 }

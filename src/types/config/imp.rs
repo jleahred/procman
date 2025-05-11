@@ -8,18 +8,24 @@ use serde::de::{Deserializer, SeqAccess, Visitor};
 use serde::Deserialize;
 use std::fmt;
 use std::fs;
+use std::path::PathBuf;
 use toml;
 
 impl Config {
-    pub(crate) fn read_and_expand(file_path: &str) -> Result<Expanded, ConfigError> {
+    pub(crate) fn read_and_expand(file_path: &PathBuf) -> Result<Expanded, ConfigError> {
         let content = fs::read_to_string(file_path).map_err(|err| {
-            ConfigError(format!("Failed to read TOML file '{}': {}", file_path, err))
+            ConfigError(format!(
+                "Failed to read TOML file '{}': {}",
+                file_path.to_str().unwrap_or("?"),
+                err
+            ))
         })?;
 
         let parsed_toml: toml::Value = toml::from_str(&content).map_err(|err| {
             ConfigError(format!(
                 "Failed to parse TOML file '{}': {}",
-                file_path, err
+                file_path.to_str().unwrap_or("?"),
+                err
             ))
         })?;
 
@@ -47,7 +53,7 @@ impl Config {
             .map_err(|err| ConfigError(format!("Template expansion error: {}", err)))
     }
 
-    pub(crate) fn read_from_file(file_path: &str) -> Result<Config, ConfigError> {
+    pub(crate) fn read_from_file(file_path: &PathBuf) -> Result<Config, ConfigError> {
         let content = Self::read_and_expand(file_path)?;
         // let content = fs::read_to_string(file_path).map_err(|err| {
         //     ConfigError(format!("Failed to read TOML file '{}': {}", file_path, err))
@@ -56,7 +62,8 @@ impl Config {
         let config: Config = toml::from_str(&content.0).map_err(|err| {
             ConfigError(format!(
                 "Failed to parse TOML content at '{}': {}",
-                file_path, err
+                file_path.to_str().unwrap_or("?"),
+                err
             ))
         })?;
 

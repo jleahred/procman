@@ -4,15 +4,16 @@ mod processes;
 
 use std::collections::BTreeMap;
 use std::io;
+use std::path::PathBuf;
 use std::time::Duration;
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use crossterm::execute;
 use crossterm::terminal::EnterAlternateScreen;
+use ratatui::layout::Margin;
 use ratatui::widgets::ListState;
 use ratatui::{backend::CrosstermBackend, Terminal};
 use ratatui::{
-    layout::Margin,
     style::Stylize,
     symbols::{self},
     text::Line,
@@ -26,14 +27,13 @@ use crate::Config;
 
 // #[derive(Debug)]
 struct App {
-    cfg_file_name: String,
-    processes: Processes,
+    full_config_filename: Option<PathBuf>,
+    processes: Option<Processes>,
     choose_file: ChooseFile,
     exit: bool,
-    debug: Option<String>,
 }
 
-pub(crate) fn run(cfg_file_name: &str) -> io::Result<()> {
+pub(crate) fn run() -> io::Result<()> {
     //     let stdout = io::stdout(); //  todo:
     let stdout = io::stdout();
     let backend = CrosstermBackend::new(stdout);
@@ -41,18 +41,17 @@ pub(crate) fn run(cfg_file_name: &str) -> io::Result<()> {
     crossterm::terminal::enable_raw_mode()?;
     execute!(io::stdout(), EnterAlternateScreen)?;
 
-    let processes = Processes::create(&cfg_file_name, TableState::default())
-        .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+    // let processes = Processes::create(&cfg_file_name, TableState::default())
+    //     .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
 
     let mut app = App {
-        cfg_file_name: cfg_file_name.to_string(),
-        processes,
+        full_config_filename: None,
+        processes: None,
         choose_file: ChooseFile {
             files: choose_file::available_files(),
             wstate: ListState::default(),
         },
         exit: false,
-        debug: None,
     };
 
     let app_result = app.run(&mut terminal);
@@ -66,29 +65,49 @@ impl App {
     /// runs the application's main loop until the user quits
     fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
         use std::time::{Duration, Instant};
-        let mut last_update = Instant::now();
+        // let mut last_update = Instant::now();
 
         while !self.exit {
             terminal.draw(|frame| self.draw(frame))?;
+
             self.handle_events(Duration::from_secs(2))?;
 
-            // Actualiza self.processes cada 2 segundos
-            if last_update.elapsed() >= Duration::from_secs(2) {
-                self.processes =
-                    Processes::create(&self.cfg_file_name, self.processes.table_state.clone())
-                        .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
-                last_update = Instant::now();
-                self.choose_file.files = choose_file::available_files();
+            // if last_update.elapsed() >= update_frec {
+            match &self.full_config_filename {
+                Some(full_config_filename) => {
+                    let proc_table_state = self
+                        .processes
+                        .as_ref()
+                        .map(|p| p.table_state.clone())
+                        .unwrap_or_default();
+                    self.processes = Some(
+                        Processes::create(&full_config_filename, proc_table_state)
+                            .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?,
+                    );
+                }
+                _ => {
+                    self.choose_file = ChooseFile {
+                        files: choose_file::available_files(),
+                        wstate: self.choose_file.wstate.clone(),
+                    };
+                    self.processes = None;
+                }
             }
-
-            // Pequeño sleep para evitar uso excesivo de CPU
-            // std::thread::sleep(Duration::from_millis(100));
+            // last_update = Instant::now();
+            // }
         }
         Ok(())
     }
 
     fn draw(&mut self, frame: &mut Frame) {
-        let title = Line::from(format!("  [ {} ]  ", self.cfg_file_name)).centered();
+        let title = Line::from(format!(
+            "  [ {} ]  ",
+            self.full_config_filename
+                .as_ref()
+                .map(|path| path.display().to_string())
+                .unwrap_or_else(|| "no file selected".to_string())
+        ))
+        .centered();
         let bottom = Line::from(vec![
             " Quit ".into(),
             "<Q> ".blue().bold(),
@@ -104,8 +123,14 @@ impl App {
             frame.area(),
         );
 
-        //self.render_processes(frame, frame.area().inner(Margin::new(1, 1)));
-        self.render_choose_files(frame);
+        match &self.processes {
+            Some(processes) => {
+                self.render_processes(frame, frame.area().inner(Margin::new(1, 1)), &processes);
+            }
+            None => {
+                self.render_choose_files(frame, self.choose_file.clone());
+            }
+        }
     }
 
     fn handle_events(&mut self, timeout: Duration) -> io::Result<()> {
@@ -132,16 +157,22 @@ impl App {
             KeyCode::Char('c') if key_event.modifiers.contains(event::KeyModifiers::CONTROL) => {
                 self.exit = true
             }
-            KeyCode::Char('d') => {
-                if self.debug.is_some() {
-                    self.debug = None
-                } else {
-                    self.debug = Some(format!("{:#?}", self.processes.watched))
-                }
-            }
             _ => {
                 // self.handle_key_event_processes(key_event),
-                self.handle_key_event_choose_file(key_event);
+                match (self.full_config_filename.as_ref(), self.processes.as_mut()) {
+                    (None, _) => {
+                        self.choose_file =
+                            self.handle_key_event_choose_file(key_event, self.choose_file.clone());
+                    }
+                    (Some(_), Some(processes)) => {
+                        processes.table_state = processes::handle_key_event_processes(
+                            key_event,
+                            processes,
+                            processes.table_state.clone(),
+                        );
+                    }
+                    (_, _) => {}
+                }
             }
         }
     }
@@ -149,7 +180,7 @@ impl App {
 
 impl Processes {
     pub(crate) fn create(
-        full_config_filename: &str,
+        full_config_filename: &PathBuf,
         table_state: TableState,
     ) -> Result<Self, String> {
         let watched = WatchNow::create(full_config_filename)?;
@@ -186,6 +217,7 @@ impl Processes {
     }
 }
 
+#[derive(Clone)]
 struct ChooseFile {
     files: Vec<String>,
     wstate: ListState,
