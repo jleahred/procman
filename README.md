@@ -3,7 +3,11 @@
 
 ## TODO
 
-* tui f para configurar otro fichero
+* health check, si el comando falla, reiniciar el servicio???
+* activity_check/log_activity para verificar actividad en ficheros log? como alternativa a health_check?
+* errores importantes con "!"
+* envío de email para errores importantes?
+* tui key <f> para configurar otro fichero
 * tui eventos -> comandos
 * tui mostrar la úlitma actualización de procesos, si es muy antigua, en rojo
 * delete old files, delete old stopped
@@ -24,7 +28,6 @@
 
 * probar supervisor
 * eliminar los println! y eprintln! centralizar (afecta al tui)
-* renonbrar los running por watched
 * log con tiempo ejecución oneshot
 * tui
     * estructura con estado completo para renderizar
