@@ -1,5 +1,6 @@
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::layout::Layout;
+use ratatui::widgets::ListState;
 use ratatui::{layout::Rect, style::Stylize, Frame};
 use ratatui::{
     layout::{Constraint, Flex},
@@ -10,71 +11,84 @@ use ratatui::{
 };
 use std::fs;
 
-impl super::App {
-    pub(super) fn render_choose_files(
-        &mut self,
-        frame: &mut Frame,
-        mut choose_file: super::ChooseFile,
-    ) -> super::ChooseFile {
-        let area = center(frame.area(), Constraint::Length(80), Constraint::Length(20));
+pub(super) struct ChooseFileState {
+    files: Vec<String>,
+    pub(super) wstate: ListState,
+}
 
-        let table = List::new(choose_file.files.clone())
-                .block(
-                    Block::bordered()
-                        .title(Line::from(" Choose file: ").centered())
-                        .borders(ratatui::widgets::Borders::ALL)
-                        .border_set(symbols::border::DOUBLE),
-                )
-                .highlight_style(Style::new().reversed())
-                // .highlight_symbol(">>")
-                .repeat_highlight_symbol(true)
-                //.direction(ListDirection::BottomToTop)
-                ;
-
-        frame.render_stateful_widget(table, area, &mut choose_file.wstate);
-        choose_file
-    }
-
-    pub(super) fn handle_key_event_choose_file(
-        &mut self,
-        key_event: KeyEvent,
-        mut choose_file: super::ChooseFile,
-    ) -> super::ChooseFile {
-        match key_event.code {
-            // KeyCode::Esc => {
-            //     choose_file.wstate.select(None);
-            // }
-            KeyCode::Down => {
-                if let Some(selected) = choose_file.wstate.selected() {
-                    let next = (selected + 1) % choose_file.len();
-                    choose_file.wstate.select(Some(next));
-                } else {
-                    choose_file.wstate.select(Some(0));
-                }
-            }
-            KeyCode::Up => {
-                if let Some(selected) = choose_file.wstate.selected() {
-                    let prev = if selected == 0 {
-                        choose_file.len() - 1
-                    } else {
-                        selected - 1
-                    };
-                    choose_file.wstate.select(Some(prev));
-                } else {
-                    choose_file.wstate.select(Some(0));
-                }
-            }
-            KeyCode::Enter => {
-                if let Some(selected) = choose_file.wstate.selected() {
-                    let selected_file = choose_file.files[selected].clone();
-                    self.full_config_filename = Some(std::path::PathBuf::from(selected_file));
-                }
-            }
-            _ => {}
-        }
-        choose_file
+impl Default for ChooseFileState {
+    fn default() -> Self {
+        let mut result = Self {
+            files: available_files(),
+            wstate: ListState::default(),
+        };
+        result.wstate.select(Some(0));
+        result
     }
 }
+
+pub(super) fn render(frame: &mut Frame, choose_file: &mut ChooseFileState) {
+    let area = center(frame.area(), Constraint::Length(80), Constraint::Length(20));
+
+    let table = List::new(choose_file.files.clone())
+            .block(
+                Block::bordered()
+                    .title(Line::from(" Choose file: ").centered())
+                    .borders(ratatui::widgets::Borders::ALL)
+                    .border_set(symbols::border::DOUBLE),
+            )
+            .highlight_style(Style::new().reversed())
+            // .highlight_symbol(">>")
+            .repeat_highlight_symbol(true)
+            //.direction(ListDirection::BottomToTop)
+            ;
+
+    frame.render_stateful_widget(table, area, &mut choose_file.wstate);
+}
+
+pub(super) fn handle_key_event(
+    key_event: KeyEvent,
+    choose_file: &mut ChooseFileState,
+) -> super::Command {
+    match key_event.code {
+        // KeyCode::Esc => {
+        //     choose_file.wstate.select(None);
+        // }
+        KeyCode::Down => {
+            if let Some(selected) = choose_file.wstate.selected() {
+                let next = (selected + 1) % choose_file.len();
+                choose_file.wstate.select(Some(next));
+            } else {
+                choose_file.wstate.select(Some(0));
+            }
+            super::Command::None
+        }
+        KeyCode::Up => {
+            if let Some(selected) = choose_file.wstate.selected() {
+                let prev = if selected == 0 {
+                    choose_file.len() - 1
+                } else {
+                    selected - 1
+                };
+                choose_file.wstate.select(Some(prev));
+            } else {
+                choose_file.wstate.select(Some(0));
+            }
+            super::Command::None
+        }
+        KeyCode::Enter => {
+            if let Some(selected) = choose_file.wstate.selected() {
+                let selected_file = choose_file.files[selected].clone();
+                super::Command::ChoosedFile(std::path::PathBuf::from(selected_file))
+            } else {
+                super::Command::None
+            }
+        }
+        _ => super::Command::None,
+    }
+}
+
+// ------------------
 
 pub(super) fn available_files() -> Vec<String> {
     let files = match fs::read_dir("/tmp/procman") {
@@ -105,7 +119,7 @@ fn center(area: Rect, horizontal: Constraint, vertical: Constraint) -> Rect {
     area
 }
 
-impl super::ChooseFile {
+impl ChooseFileState {
     fn len(&self) -> usize {
         self.files.len()
     }

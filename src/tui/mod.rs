@@ -11,7 +11,6 @@ use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use crossterm::execute;
 use crossterm::terminal::EnterAlternateScreen;
 use ratatui::layout::Margin;
-use ratatui::widgets::ListState;
 use ratatui::{backend::CrosstermBackend, Terminal};
 use ratatui::{
     style::Stylize,
@@ -24,13 +23,20 @@ use ratatui::{
 use crate::types::config::{ProcessConfig, ProcessId};
 use crate::watch_now::WatchNow;
 use crate::Config;
+use choose_file::ChooseFileState;
 
 // #[derive(Debug)]
 struct App {
     full_config_filename: Option<PathBuf>,
     processes: Option<Processes>,
-    choose_file: ChooseFile,
+    choose_file: ChooseFileState,
     exit: bool,
+}
+
+enum Command {
+    None,
+    ChoosedFile(std::path::PathBuf),
+    Processes,
 }
 
 pub(crate) fn run() -> io::Result<()> {
@@ -47,13 +53,9 @@ pub(crate) fn run() -> io::Result<()> {
     let mut app = App {
         full_config_filename: None,
         processes: None,
-        choose_file: ChooseFile {
-            files: choose_file::available_files(),
-            wstate: ListState::default(),
-        },
+        choose_file: ChooseFileState::default(),
         exit: false,
     };
-    app.choose_file.wstate.select(Some(0));
 
     let app_result = app.run(&mut terminal);
 
@@ -65,7 +67,7 @@ pub(crate) fn run() -> io::Result<()> {
 impl App {
     /// runs the application's main loop until the user quits
     fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
-        use std::time::{Duration, Instant};
+        use std::time::Duration;
         // let mut last_update = Instant::now();
 
         while !self.exit {
@@ -87,10 +89,6 @@ impl App {
                     );
                 }
                 _ => {
-                    self.choose_file = ChooseFile {
-                        files: choose_file::available_files(),
-                        wstate: self.choose_file.wstate.clone(),
-                    };
                     self.processes = None;
                 }
             }
@@ -129,7 +127,7 @@ impl App {
                 self.render_processes(frame, frame.area().inner(Margin::new(1, 1)), &processes);
             }
             None => {
-                self.render_choose_files(frame, self.choose_file.clone());
+                choose_file::render(frame, &mut self.choose_file);
             }
         }
     }
@@ -160,20 +158,32 @@ impl App {
             }
             _ => {
                 // self.handle_key_event_processes(key_event),
-                match (self.full_config_filename.as_ref(), self.processes.as_mut()) {
-                    (None, _) => {
-                        self.choose_file =
-                            self.handle_key_event_choose_file(key_event, self.choose_file.clone());
-                    }
+                let commands = match (self.full_config_filename.as_ref(), self.processes.as_mut()) {
+                    (None, _) => choose_file::handle_key_event(key_event, &mut self.choose_file),
                     (Some(_), Some(processes)) => {
                         processes.table_state = processes::handle_key_event_processes(
                             key_event,
                             processes,
                             processes.table_state.clone(),
                         );
+                        Command::None
                     }
-                    (_, _) => {}
-                }
+                    (_, _) => Command::None,
+                };
+                self.process_commands(commands);
+            }
+        }
+    }
+
+    fn process_commands(&mut self, command: Command) {
+        match command {
+            Command::None => {}
+            Command::ChoosedFile(path) => {
+                self.full_config_filename = Some(path);
+                self.processes = None;
+            }
+            Command::Processes => {
+                // self.processes = Some(Processes::create(&self.full_config_filename));
             }
         }
     }
@@ -216,10 +226,4 @@ impl Processes {
     fn len(&self) -> usize {
         self.watched.processes.len() + self.only_in_config.len()
     }
-}
-
-#[derive(Clone)]
-struct ChooseFile {
-    files: Vec<String>,
-    wstate: ListState,
 }
