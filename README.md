@@ -7,8 +7,6 @@
 * activity_check/log_activity para verificar actividad en ficheros log? como alternativa a health_check?
 * errores importantes con "!"
 * envío de email para errores importantes?
-* tui key <f> para configurar otro fichero
-* tui eventos -> comandos
 * tui mostrar la úlitma actualización de procesos, si es muy antigua, en rojo
 * delete old files, delete old stopped
 * hay que borrar los procesos que tengan running_status pero no estén en config
@@ -22,7 +20,6 @@
     * commands
         * stop
         * ...
-* revisar varios ficheros en paralelo (no en tui)
 
 
 
