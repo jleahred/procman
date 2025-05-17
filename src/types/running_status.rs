@@ -6,7 +6,7 @@ pub(crate) use imp::load_running_status;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, path::PathBuf};
 
-use super::config::CommandCheckHealth;
+use super::config::CheckHealth;
 
 #[derive(Deserialize, Serialize, Debug)]
 pub(crate) struct RunningStatus {
@@ -33,7 +33,7 @@ pub(crate) enum ProcessStatus {
     ShouldBeRunning,
     PendingInitCmd {
         pid: u32,
-        health_check: Option<CommandCheckHealth>,
+        health_check: Option<CheckHealth>,
         procman_uid: String,
         stop_command: Option<CommandStop>,
     },
@@ -41,11 +41,11 @@ pub(crate) enum ProcessStatus {
         pid: u32,
         procman_uid: String,
         stop_command: Option<CommandStop>,
-        health_check: Option<CommandCheckHealth>,
+        health_check: Option<CheckHealth>,
     },
     Stopping {
         pid: u32,
-        health_check: Option<CommandCheckHealth>,
+        health_check: Option<CheckHealth>,
         procman_uid: String,
         retries: u32,
         last_attempt: NaiveDateTime,

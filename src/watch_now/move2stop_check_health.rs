@@ -1,8 +1,8 @@
 use std::{process::Command, thread, time};
 
-use crate::{
-    types::config::CommandCheckHealth,
-    types::running_status::{self, ProcessStatus, ProcessWatched},
+use crate::types::{
+    config::CheckHealth,
+    running_status::{self, ProcessStatus, ProcessWatched},
 };
 
 impl super::WatchNow {
@@ -30,9 +30,9 @@ impl super::WatchNow {
                                 });
 
                                 println!(
-                                    "[{}] Register Stopped (in stopping state) by health_check command {}",
+                                    "[{}] Register Stopped (in stopping state) by health_check {:?}",
                                     proc_id.0,
-                                    health_check.command().0
+                                    health_check
                                 );
                             }
                         }
@@ -67,9 +67,8 @@ impl super::WatchNow {
                                 });
 
                                 println!(
-                                    "[{}] Move to stopping by health_check command {}",
-                                    proc_id.0,
-                                    health_check.command().0
+                                    "[{}] Move to stopping by health_check command {:?}",
+                                    proc_id.0, health_check
                                 );
                             }
                         }
@@ -82,10 +81,24 @@ impl super::WatchNow {
     }
 }
 
-fn is_process_running(health_check: &CommandCheckHealth) -> bool {
-    match run_command_with_timeout(&health_check.command().0, health_check.timeout()) {
-        Ok(()) => true,
-        Err(_err) => false,
+fn is_process_running(health_check: &CheckHealth) -> bool {
+    match health_check {
+        CheckHealth::Command(health_check) => {
+            match run_command_with_timeout(&health_check.command().0, health_check.timeout()) {
+                Ok(()) => true,
+                Err(_err) => false,
+            }
+        }
+        CheckHealth::FolderActivity(folder_activity) => {
+            let most_recent_update = get_most_recent_update_folder(folder_activity.folder());
+            let inactive_time = folder_activity.inactive_time();
+            if let Some(most_recent) = most_recent_update {
+                if let Ok(elapsed) = most_recent.elapsed() {
+                    return elapsed < inactive_time;
+                }
+            }
+            false
+        }
     }
 }
 
@@ -121,4 +134,26 @@ fn run_command_with_timeout(command: &str, timeout: time::Duration) -> Result<()
     let _ = child.kill();
     let _ = child.wait(); // Important to avoid zombie processes
     Err("Command timed out".to_string())
+}
+
+use std::fs;
+
+fn get_most_recent_update_folder(folder: &std::path::PathBuf) -> Option<std::time::SystemTime> {
+    let mut most_recent: Option<std::time::SystemTime> = None;
+
+    if let Ok(entries) = fs::read_dir(folder) {
+        for entry in entries.flatten() {
+            if let Ok(metadata) = entry.metadata() {
+                if let Ok(modified) = metadata.modified() {
+                    most_recent = match most_recent {
+                        Some(current) if modified > current => Some(modified),
+                        None => Some(modified),
+                        _ => most_recent,
+                    };
+                }
+            }
+        }
+    }
+
+    most_recent
 }

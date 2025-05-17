@@ -327,7 +327,7 @@ In such cases, the stop command can be used.
 
 
 
-#### process.health_check
+#### process.health_check.command
 
 When it is not possible to work with the system PID to verify if the process is alive, we can execute a command that will succeed if the process is alive and fail otherwise.
 
@@ -355,6 +355,27 @@ health_check = {command = "command", timeout = "1s"}
 It is crucial that the command performs its task correctly.
 
 If it is queried and returns "ok" when the process is not alive, it will leave it stuck in the `stopping` state.
+
+
+#### process.health_check.folder
+
+It is possible to use activity in a directory as a way to verify that a process is functioning.
+
+For example, if the process/service writes to a log with a minimum frequency, this can be a reliable method to check whether the process/service is running properly.
+
+
+```toml
+[[process]]
+id = "A"
+command = "echo 'hi' && sleep 2222"
+apply_on = "2024-11-01T12:00:00"
+health_check = { folder = "./fake", inactive_time = "10s" }
+```
+
+`inactive_time` is optional.
+
+Another advantage of this method for detecting whether a service is running is that if the process becomes unresponsive, checking the PID or running container may still indicate that everything is OK, whereas monitoring directory activity will detect the freeze and restart the service.
+
 
 
 

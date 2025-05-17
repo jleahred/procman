@@ -6,11 +6,11 @@ file_format = "0"
 
 [[process]]
 id = "A"
-command = "echo 'hi' && sleep 2"
+command = "echo 'hi' && sleep 2222"
 apply_on = "2024-11-01T12:00:00"
 # type = "one-shot"
-schedule = { start_time = "01:00:00", stop_time = "23:59:00" }
-
+# schedule = { start_time = "01:00:00", stop_time = "23:59:00" }
+health_check = { folder = "./fake", inactive_time = "10s" }
 
 # [[process]]
 # id = "A"

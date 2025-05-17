@@ -43,7 +43,7 @@ pub(crate) struct ProcessConfig {
     /// This command will be executed to check the status of the process
     /// If this command is defined, instead of using the pid to determine if the process is running,
     /// this command will be used
-    pub(crate) health_check: Option<CommandCheckHealth>,
+    pub(crate) health_check: Option<CheckHealth>,
 
     #[serde(default)]
     pub(crate) schedule: Option<Schedule>,
@@ -109,6 +109,14 @@ impl CommandBefore {
 #[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Debug)]
 #[serde(deny_unknown_fields)]
 #[serde(untagged)]
+pub(crate) enum CheckHealth {
+    Command(CommandCheckHealth),
+    FolderActivity(FolderActivityCheckHealth),
+}
+
+#[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+#[serde(untagged)]
 pub(crate) enum CommandCheckHealth {
     Simple(Command),
     Detailed {
@@ -130,6 +138,35 @@ impl CommandCheckHealth {
             CommandCheckHealth::Simple(_) => std::time::Duration::from_secs(5),
             CommandCheckHealth::Detailed { timeout, .. } => {
                 timeout.unwrap_or_else(|| std::time::Duration::from_secs(5))
+            }
+        }
+    }
+}
+
+#[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+#[serde(untagged)]
+pub(crate) enum FolderActivityCheckHealth {
+    Simple(std::path::PathBuf),
+    Detailed {
+        folder: std::path::PathBuf,
+        #[serde(with = "humantime_serde")]
+        #[serde(default)]
+        inactive_time: Option<std::time::Duration>,
+    },
+}
+impl FolderActivityCheckHealth {
+    pub(crate) fn folder(&self) -> &std::path::PathBuf {
+        match self {
+            FolderActivityCheckHealth::Simple(folder) => folder,
+            FolderActivityCheckHealth::Detailed { folder, .. } => folder,
+        }
+    }
+    pub(crate) fn inactive_time(&self) -> std::time::Duration {
+        match self {
+            FolderActivityCheckHealth::Simple(_) => std::time::Duration::from_secs(300),
+            FolderActivityCheckHealth::Detailed { inactive_time, .. } => {
+                inactive_time.unwrap_or_else(|| std::time::Duration::from_secs(300))
             }
         }
     }
