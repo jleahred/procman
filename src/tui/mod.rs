@@ -2,41 +2,49 @@
 mod choose_file;
 mod processes;
 
-use std::collections::BTreeMap;
-use std::io;
-use std::path::PathBuf;
-use std::time::Duration;
-
-use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
-use crossterm::execute;
-use crossterm::terminal::EnterAlternateScreen;
-use ratatui::layout::Margin;
-use ratatui::{backend::CrosstermBackend, Terminal};
-use ratatui::{
-    style::Stylize,
-    symbols::{self},
-    text::Line,
-    widgets::{Block, TableState},
-    DefaultTerminal, Frame,
-};
-
-use crate::types::config::{ProcessConfig, ProcessId};
-use crate::watch_now::WatchNow;
-use crate::Config;
 use choose_file::ChooseFileState;
+use crossterm::{
+    event::{self, Event, KeyCode, KeyEvent, KeyEventKind},
+    execute,
+    terminal::EnterAlternateScreen,
+};
+use once_cell::sync::Lazy;
+use processes::Processes;
+use ratatui::{
+    backend::CrosstermBackend,
+    layout::{Constraint, Layout, Rect},
+    style::Stylize,
+    text::Line,
+    widgets::Block,
+    DefaultTerminal, Frame, Terminal,
+};
+use std::io;
+use std::sync::Mutex;
+use std::time::{Duration, Instant};
 
-// #[derive(Debug)]
+macro_rules! handle_events {
+    (  $( $cmd:expr ),+ $(,)? ) => {{
+        let mut commands = Vec::<Command>::new();
+        $(
+            commands.push($cmd);
+        )+
+        commands
+    }};
+}
+
+static LAST_UPDATE: Lazy<Mutex<Instant>> = Lazy::new(|| Mutex::new(Instant::now()));
+const UPDATE_INTERVAL: Duration = Duration::from_millis(500);
+
 struct App {
-    full_config_filename: Option<PathBuf>,
     processes: Option<Processes>,
-    choose_file: ChooseFileState,
+    choose_file: Option<ChooseFileState>,
     exit: bool,
 }
 
 enum Command {
     None,
+    ChooseFile,
     ChoosedFile(std::path::PathBuf),
-    Processes,
 }
 
 pub(crate) fn run() -> io::Result<()> {
@@ -47,13 +55,9 @@ pub(crate) fn run() -> io::Result<()> {
     crossterm::terminal::enable_raw_mode()?;
     execute!(io::stdout(), EnterAlternateScreen)?;
 
-    // let processes = Processes::create(&cfg_file_name, TableState::default())
-    //     .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
-
     let mut app = App {
-        full_config_filename: None,
         processes: None,
-        choose_file: ChooseFileState::default(),
+        choose_file: Some(ChooseFileState::default()),
         exit: false,
     };
 
@@ -67,163 +71,131 @@ pub(crate) fn run() -> io::Result<()> {
 impl App {
     /// runs the application's main loop until the user quits
     fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
-        use std::time::Duration;
-        // let mut last_update = Instant::now();
-
         while !self.exit {
             terminal.draw(|frame| self.draw(frame))?;
 
-            self.handle_events(Duration::from_secs(2))?;
+            self.handle_events(Duration::from_secs(2))
+                .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
 
-            // if last_update.elapsed() >= update_frec {
-            match &self.full_config_filename {
-                Some(full_config_filename) => {
-                    let proc_table_state = self
-                        .processes
-                        .as_ref()
-                        .map(|p| p.table_state.clone())
-                        .unwrap_or_default();
-                    self.processes = Some(
-                        Processes::create(&full_config_filename, proc_table_state)
-                            .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?,
-                    );
-                }
-                _ => {
-                    self.processes = None;
-                }
-            }
-            // last_update = Instant::now();
-            // }
+            update_info_app(self).map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
         }
         Ok(())
     }
 
     fn draw(&mut self, frame: &mut Frame) {
-        let title = Line::from(format!(
-            "  [ {} ]  ",
-            self.full_config_filename
-                .as_ref()
-                .map(|path| path.display().to_string())
-                .unwrap_or_else(|| "no file selected".to_string())
-        ))
-        .centered();
-        let bottom = Line::from(vec![
-            " Quit ".into(),
-            "<Q> ".blue().bold(),
-            "<Ctrl-c> ".blue().bold(),
-            // "<Esc> ".blue().bold(),
-        ])
-        .centered();
-        frame.render_widget(
-            Block::bordered()
-                .border_set(symbols::border::ROUNDED)
-                .title(title)
-                .title_bottom(bottom),
-            frame.area(),
-        );
+        let [main, bottom] = Layout::vertical([Constraint::Fill(1), Constraint::Length(1)])
+            // .flex(Flex::Center)
+            .areas(frame.area());
 
-        match &self.processes {
-            Some(processes) => {
-                self.render_processes(frame, frame.area().inner(Margin::new(1, 1)), &processes);
-            }
-            None => {
-                choose_file::render(frame, &mut self.choose_file);
-            }
-        }
+        draw_main(&self, frame, bottom);
+
+        self.processes
+            .as_mut()
+            .map(|processes| processes.render(frame, main));
+        self.choose_file.as_mut().map(|w| w.render(frame, main));
     }
 
-    fn handle_events(&mut self, timeout: Duration) -> io::Result<()> {
-        match event::poll(timeout)? {
+    fn handle_events(&mut self, timeout: Duration) -> Result<(), String> {
+        match event::poll(timeout).map_err(|e| e.to_string())? {
             true => {
-                match event::read()? {
-                    // it's important to check that the event is a key press event as
-                    // crossterm also emits key release and repeat events on Windows.
-                    Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
-                        self.handle_key_event_main(key_event)
-                    }
-                    _ => {}
+                let event = event::read().map_err(|e| e.to_string())?;
+
+                let commands = handle_events! {
+                    self.handle_events_main(&event),
+                    // self.choose_file.handle_events(&event),
+                    self.choose_file.as_mut()
+                    .map_or(Command::None, |w| w.handle_events(&event)),
+                    self.processes
+                        .as_mut()
+                        .map_or(Command::None, |w| w.handle_events(&event))
                 };
+                // let commands = handle_events2! {
+                //     &event,
+                //     self, App::handle_events_main,
+                //     &mut self.choose_file, ChooseFileState::handle_events,
+                // };
+
+                self.process_commands(&commands)?;
             }
             false => {}
         }
         Ok(())
     }
 
-    fn handle_key_event_main(&mut self, key_event: KeyEvent) {
-        match key_event.code {
-            // KeyCode::Esc => self.exit = true,
-            KeyCode::Char('q') => self.exit = true,
-            KeyCode::Char('c') if key_event.modifiers.contains(event::KeyModifiers::CONTROL) => {
-                self.exit = true
+    fn handle_events_main(&mut self, event: &Event) -> Command {
+        match event {
+            // it's important to check that the event is a key press event as
+            // crossterm also emits key release and repeat events on Windows.
+            Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
+                handle_key_event_main(self, &key_event)
             }
-            _ => {
-                // self.handle_key_event_processes(key_event),
-                let commands = match (self.full_config_filename.as_ref(), self.processes.as_mut()) {
-                    (None, _) => choose_file::handle_key_event(key_event, &mut self.choose_file),
-                    (Some(_), Some(processes)) => {
-                        processes.table_state = processes::handle_key_event_processes(
-                            key_event,
-                            processes,
-                            processes.table_state.clone(),
-                        );
-                        Command::None
-                    }
-                    (_, _) => Command::None,
-                };
-                self.process_commands(commands);
+            _ => {}
+        };
+        Command::None
+    }
+
+    fn process_commands(&mut self, commands: &[Command]) -> Result<(), String> {
+        for command in commands {
+            match command {
+                Command::None => {}
+                Command::ChooseFile => {
+                    self.choose_file = Some(ChooseFileState::default());
+                    self.processes = None;
+                }
+                Command::ChoosedFile(path) => {
+                    self.processes = Some(Processes::create(&path)?);
+                    self.choose_file = None;
+                }
             }
         }
+        Ok(())
     }
+}
 
-    fn process_commands(&mut self, command: Command) {
-        match command {
-            Command::None => {}
-            Command::ChoosedFile(path) => {
-                self.full_config_filename = Some(path);
-                self.processes = None;
-            }
-            Command::Processes => {
-                // self.processes = Some(Processes::create(&self.full_config_filename));
-            }
+fn draw_main(_app: &App, frame: &mut Frame, area: Rect) {
+    let bottom = Line::from(vec![
+        " Quit ".into(),
+        "<Q> ".blue().bold(),
+        "<Ctrl-c> ".blue().bold(),
+    ])
+    .centered();
+    frame.render_widget(
+        Block::new()
+            // Block::bordered()
+            // .border_set(symbols::border::ROUNDED)
+            // .title(title)
+            .title_bottom(bottom),
+        area,
+    );
+}
+
+fn handle_key_event_main(app: &mut App, key_event: &KeyEvent) {
+    match key_event.code {
+        // KeyCode::Esc => self.exit = true,
+        KeyCode::Char('q') => app.exit = true,
+        KeyCode::Char('c') if key_event.modifiers.contains(event::KeyModifiers::CONTROL) => {
+            app.exit = true
         }
+        _ => {}
     }
 }
 
-impl Processes {
-    pub(crate) fn create(
-        full_config_filename: &PathBuf,
-        table_state: TableState,
-    ) -> Result<Self, String> {
-        let watched = WatchNow::create(full_config_filename)?;
-        let mut only_in_config = BTreeMap::new();
+fn update_info_app(app: &mut App) -> Result<(), String> {
+    let mut last_update = LAST_UPDATE
+        .lock()
+        .map_err(|_| "Failed to lock LAST_UPDATE")?;
 
-        let config: Config =
-            Config::read_from_file(full_config_filename).map_err(|e| e.0.to_string())?;
-        for process_config in config.process.iter() {
-            if !watched.processes.contains_key(&process_config.id) {
-                only_in_config
-                    .entry(process_config.id.clone())
-                    .or_insert_with(|| process_config.clone());
-            }
-        }
-        Ok(Self {
-            watched,
-            only_in_config,
-            table_state,
-        })
+    if last_update.elapsed() >= UPDATE_INTERVAL {
+        app.processes
+            .as_mut()
+            .and_then(|processes| Some(processes.update_data()));
+        app.choose_file
+            .as_mut()
+            .and_then(|cf| Some(cf.update_data()));
+
+        *last_update = Instant::now();
     }
+    Ok(())
 }
 
-// #[derive(Clone)]
-pub(super) struct Processes {
-    watched: WatchNow,
-    pub(crate) only_in_config: BTreeMap<ProcessId, ProcessConfig>,
-
-    table_state: TableState,
-}
-
-impl Processes {
-    fn len(&self) -> usize {
-        self.watched.processes.len() + self.only_in_config.len()
-    }
-}
+// -------------------------

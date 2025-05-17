@@ -1,19 +1,17 @@
-use crossterm::event::{KeyCode, KeyEvent};
-use ratatui::layout::Layout;
-use ratatui::widgets::ListState;
-use ratatui::{layout::Rect, style::Stylize, Frame};
+use crossterm::event::{Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::{
-    layout::{Constraint, Flex},
-    style::Style,
+    layout::{Constraint, Flex, Layout, Rect},
+    style::{Style, Stylize},
     symbols,
     text::Line,
-    widgets::{Block, List},
+    widgets::{Block, List, ListState},
+    Frame,
 };
 use std::fs;
 
 pub(super) struct ChooseFileState {
     files: Vec<String>,
-    pub(super) wstate: ListState,
+    wstate: ListState,
 }
 
 impl Default for ChooseFileState {
@@ -27,29 +25,50 @@ impl Default for ChooseFileState {
     }
 }
 
-pub(super) fn render(frame: &mut Frame, choose_file: &mut ChooseFileState) {
-    let area = center(frame.area(), Constraint::Length(80), Constraint::Length(20));
+impl ChooseFileState {
+    pub(super) fn update_data(&mut self) {
+        self.files = available_files();
+        if self.files.is_empty() {
+            self.wstate.select(None);
+        } else if self.wstate.selected().is_none() {
+            self.wstate.select(Some(0));
+        }
+    }
 
-    let table = List::new(choose_file.files.clone())
-            .block(
-                Block::bordered()
-                    .title(Line::from(" Choose file: ").centered())
-                    .borders(ratatui::widgets::Borders::ALL)
-                    .border_set(symbols::border::DOUBLE),
-            )
-            .highlight_style(Style::new().reversed())
-            // .highlight_symbol(">>")
-            .repeat_highlight_symbol(true)
-            //.direction(ListDirection::BottomToTop)
-            ;
+    pub(super) fn render(&mut self, frame: &mut Frame, area: Rect) {
+        let area = center(area, Constraint::Length(80), Constraint::Length(20));
 
-    frame.render_stateful_widget(table, area, &mut choose_file.wstate);
+        let table = List::new(self.files.clone())
+                .block(
+                    Block::bordered()
+                        .title(Line::from(" Choose file: ").centered())
+                        .borders(ratatui::widgets::Borders::ALL)
+                        .border_set(symbols::border::DOUBLE),
+                )
+                .highlight_style(Style::new().reversed())
+                // .highlight_symbol(">>")
+                .repeat_highlight_symbol(true)
+                //.direction(ListDirection::BottomToTop)
+                ;
+
+        frame.render_stateful_widget(table, area, &mut self.wstate);
+    }
+
+    pub(super) fn handle_events(&mut self, event: &Event) -> super::Command {
+        match event {
+            // it's important to check that the event is a key press event as
+            // crossterm also emits key release and repeat events on Windows.
+            Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
+                handle_key_event(key_event, self)
+            }
+            _ => super::Command::None,
+        }
+    }
 }
 
-pub(super) fn handle_key_event(
-    key_event: KeyEvent,
-    choose_file: &mut ChooseFileState,
-) -> super::Command {
+//  -------------
+
+fn handle_key_event(key_event: &KeyEvent, choose_file: &mut ChooseFileState) -> super::Command {
     match key_event.code {
         // KeyCode::Esc => {
         //     choose_file.wstate.select(None);
@@ -90,22 +109,26 @@ pub(super) fn handle_key_event(
 
 // ------------------
 
-pub(super) fn available_files() -> Vec<String> {
+fn available_files() -> Vec<String> {
     let files = match fs::read_dir("/tmp/procman") {
-        Ok(entries) => entries
-            .filter_map(|entry| entry.ok())
-            .filter_map(|entry| {
-                let path = entry.path();
-                if path.extension().and_then(|ext| ext.to_str()) == Some("toml") {
-                    path.file_name()
-                        .and_then(|name| name.to_str())
-                        .map(String::from)
-                } else {
-                    None
-                }
-            })
-            .map(|file| get_cfg_file_from_running(&file))
-            .collect(),
+        Ok(entries) => {
+            let mut result = entries
+                .filter_map(|entry| entry.ok())
+                .filter_map(|entry| {
+                    let path = entry.path();
+                    if path.extension().and_then(|ext| ext.to_str()) == Some("toml") {
+                        path.file_name()
+                            .and_then(|name| name.to_str())
+                            .map(String::from)
+                    } else {
+                        None
+                    }
+                })
+                .map(|file| get_cfg_file_from_running(&file))
+                .collect::<Vec<String>>();
+            result.sort();
+            result
+        }
         Err(_) => vec![],
     };
     files

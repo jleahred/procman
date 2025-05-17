@@ -8,8 +8,8 @@ file_format = "0"
 id = "A"
 command = "echo 'hi' && sleep 2"
 apply_on = "2024-11-01T12:00:00"
-type = "one-shot"
-schedule = { start_time = "21:00:00", stop_time = "23:59:00" }
+# type = "one-shot"
+schedule = { start_time = "01:00:00", stop_time = "23:59:00" }
 
 
 # [[process]]
