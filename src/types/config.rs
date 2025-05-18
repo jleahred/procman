@@ -145,29 +145,17 @@ impl CommandCheckHealth {
 
 #[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Debug)]
 #[serde(deny_unknown_fields)]
-#[serde(untagged)]
-pub(crate) enum FolderActivityCheckHealth {
-    Simple(std::path::PathBuf),
-    Detailed {
-        folder: std::path::PathBuf,
-        #[serde(with = "humantime_serde")]
-        #[serde(default)]
-        inactive_time: Option<std::time::Duration>,
-    },
+pub(crate) struct FolderActivityCheckHealth {
+    pub(crate) folder: std::path::PathBuf,
+    #[serde(with = "humantime_serde")]
+    #[serde(default)]
+    inactive_time: Option<std::time::Duration>,
 }
 impl FolderActivityCheckHealth {
-    pub(crate) fn folder(&self) -> &std::path::PathBuf {
-        match self {
-            FolderActivityCheckHealth::Simple(folder) => folder,
-            FolderActivityCheckHealth::Detailed { folder, .. } => folder,
-        }
-    }
     pub(crate) fn inactive_time(&self) -> std::time::Duration {
-        match self {
-            FolderActivityCheckHealth::Simple(_) => std::time::Duration::from_secs(300),
-            FolderActivityCheckHealth::Detailed { inactive_time, .. } => {
-                inactive_time.unwrap_or_else(|| std::time::Duration::from_secs(300))
-            }
+        match self.inactive_time {
+            Some(inactive_time) => inactive_time,
+            None => std::time::Duration::from_secs(300),
         }
     }
 }

@@ -90,7 +90,7 @@ fn is_process_running(health_check: &CheckHealth) -> bool {
             }
         }
         CheckHealth::FolderActivity(folder_activity) => {
-            let most_recent_update = get_most_recent_update_folder(folder_activity.folder());
+            let most_recent_update = get_most_recent_update_folder(&folder_activity.folder);
             let inactive_time = folder_activity.inactive_time();
             if let Some(most_recent) = most_recent_update {
                 if let Ok(elapsed) = most_recent.elapsed() {
