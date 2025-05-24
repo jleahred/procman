@@ -16,17 +16,15 @@ file-format = "0"
 
 [[process]]
 id = "example_process"
-apply-on = "2023-10-01T12:00:00"
-command = "echo 'Hello, World!'"
+apply-on = "2025-05-12T21:00:00"
+command = "sleep 5555"
 
 #optionals  -----------------------------------------
 fake = false
-one-shot = true
 depends-on = []
 work-dir = "/tmp"
 before = "echo 'Preparing to start process...'"
 init = "echo 'Process is starting...'"
-health-check = "echo 'Checking health...'"
 stop = "echo 'Stopping process...'"
 
 [process.schedule]
