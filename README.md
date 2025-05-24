@@ -4,28 +4,20 @@
 ## TODO
 
 
-DOCUMENTAR
 
 
-¿alguna forma de desbloquear un proceso?
-Por ejemplo, un waitting pid file?
-quizá desde el tui
-
-
-move2stop_check_health
-no es seguro
-si el proceso tarda un tiempo en arrancar y que el health-check diga que está OK
-se pondrá como stop, y se volverá a lanzar. REPETIDO
 
 
 * limpieza 
     * stopped antiguos
     * /tmp/procman no actualizados hace más de varios días
-* type -> file_pid   sh -c "echo 'hi' && sleep 2222 &  echo \$! > $PROCMAN_FILE_PID; wait"
-* documentar
-
 * muestra en rojo stopped para un proceso one-shot que está "bien" terminado, corregir
 * volver a añadir el uid en variable de entorno y verificar al buscar el pid
+
+
+¿alguna forma de desbloquear un proceso?
+Por ejemplo, un waitting pid file?
+quizá desde el tui
 
 
 * tui mostrar la úlitma actualización de procesos, si es muy antigua, en rojo
@@ -115,9 +107,9 @@ Once restarted, it should continue monitoring and managing.
 
 ## Command.gen-file
 
-Esto generará un fichero base sencillo de gestión de procesos
+This will generate a simple base file for process management
 
-Algo similar a...
+Something similar to...
 
 ```toml
 # This is a simple process configuration file for procman
@@ -154,7 +146,7 @@ apply-on = "2023-10-01T12:00:00"
 command = "echo 'Hello, World!'"
 ```
 
-Aquí tenemos dos procesos a gestionar
+Here we have two processes to manage
 
 
 ## TUI
@@ -175,44 +167,44 @@ Here an example
 
 ![tui2](tui2.png)
 
-As you can see, there are processes in an error state (red color). Some are running when they shouldn’t be, while others are not running despite being expected to be active.
+As you can see, there are processes in an error state (red color). Some are running when they shouldn't be, while others are not running despite being expected to be active.
 
 These inconsistencies are detected by comparing the actual state of the processes with the expected by configuration, and are highlighted in the interface.
 
 
 
-## Configuración de fichero
+## File Configuration
 
-El formato de fichero es `toml`
+The file format is `toml`
 
-Hay documentación en internet sobre este formato, pero es bastante sencillo y con los ejemplos aquí mostrados no es necesario leer documentación específica de este formato
+There is documentation on the internet about this format, but it is quite simple and with the examples shown here it is not necessary to read specific documentation about this format
 
 
 ```toml
 uid = "fa7c0a0a-dd03-4b99-8068-aae52bb65938"
 ```
 
-Cada fichero tiene que tener un uid diferente
+Each file must have a different uid
 
-Esto se puede generar con el comando `uid`
+This can be generated with the `uid` command
 
-El comando `gen-file` escribirá un uid válido
+The `gen-file` command will write a valid uid
 
 
 ```toml
 file-format = "0"
 ```
 
-Indica la versión del formato de fichero
+Indicates the file format version
 
 
-## Configuración básica de proceso
+## Basic Process Configuration
 
 ```toml
 [[process]]
 ```
 
-Indicador de inicio configuración de proceso
+Process configuration start indicator
 
 
 ```toml
@@ -220,9 +212,9 @@ id = "example_process"
 ```
 
 
-Identificador del proceso
+Process identifier
 
-Será utilizada en logs, `tui` y las referencias entre procesos (por ejemplo dependencias de arranque también utilizarán este identificador)
+It will be used in logs, `tui` and references between processes (for example startup dependencies will also use this identifier)
 
 
 
@@ -230,9 +222,9 @@ Será utilizada en logs, `tui` y las referencias entre procesos (por ejemplo dep
 apply-on = "2023-10-01T12:00:00"
 ```
 
-Cuando la configuración de este proceso debe empezar a aplicarse
+When the configuration of this process should start being applied
 
-Un `id` puede estar repetido con diferentes `apply-on`
+An `id` can be repeated with different `apply-on`
 
 
 
@@ -242,7 +234,7 @@ Un `id` puede estar repetido con diferentes `apply-on`
 command = "echo 'Hello, World!'"
 ```
 
-El comando y parámetros para lanzar el proceso
+The command and parameters to launch the process
 
 
 
@@ -250,11 +242,11 @@ El comando y parámetros para lanzar el proceso
 depends-on = []
 ```
 
-Sirve para indicar la lista de procesos de los que dependede
+Used to indicate the list of processes it depends on
 
-Este proceso no arrancará hasta que los `id` de los procesos indicados no estén en `running`
+This process will not start until the `id` of the indicated processes are in `running` state
 
-Los procesos dependientes se detendrán si uno de los procesos de los que depende deja de estar en estado `running`
+Dependent processes will stop if one of the processes they depend on stops being in `running` state
 
 
 
@@ -262,7 +254,7 @@ Los procesos dependientes se detendrán si uno de los procesos de los que depend
 work-dir = "/tmp"
 ```
 
-El comando se lanzará en el directorio indicado
+The command will be launched in the indicated directory
 
 
 
@@ -270,26 +262,26 @@ El comando se lanzará en el directorio indicado
 before = "echo 'Preparing to start process...'"
 ```
 
-Se ejecutará este comando antes que el comando del proceso
+This command will be executed before the process command
 
-Si el comando falla, no se prosigue, y el reintento comenzará otra vez con `before`
+If the command fails, it will not continue, and the retry will start again with `before`
 
 
 ```toml
 init = "echo 'Process is starting...'"
 ```
 
-El proceso ha sio lanzado, está en ejecución, y ahora se ejecutará este comando de inicialización
+The process has been launched, is running, and now this initialization command will be executed
 
-Si el comando falla, el proceso se detendrá y se reintentará
+If the command fails, the process will stop and be retried
 
 ```toml
 stop = "echo 'Stopping process...'"
 ```
 
-Comando para parar el proceso
+Command to stop the process
 
-Por defecto se enviará un `SIGTERM` y si tras varios reintentos sigue sin detenerse, se enviará un `SIGKILL`
+By default a `SIGTERM` will be sent and if after several retries it still doesn't stop, a `SIGKILL` will be sent
 
 
 ```toml
@@ -299,9 +291,9 @@ stop-time = "23:59:00"
 week-days = ["mon", "wed", "thu", "sun"]
 ```
 
-Nos permite indicar el horario de ejecución del proceso
+Allows us to indicate the process execution schedule
 
-Tendrá que estar corriendo en el horario indicado, salvo los `one-shot`
+It must be running during the indicated schedule, except for `one-shot` processes
 
 
 
@@ -367,23 +359,23 @@ depends-on = ["example_process"]
 ```
 
 
-## Parámetros adicionales proceso
+## Additional Process Parameters
 
 ```toml
 fake = true
 ```
 
-Indicamos que esta configuración de proceso es falsa y no debe considerarse
+We indicate that this process configuration is fake and should not be considered
 
 ```toml
 one-shot = true
 ```
 
-Estos procesos no tienen que estar arrancados permanentemente
+These processes don't have to be running permanently
 
-Los procesos "normales", en caso de que se paren, se rearrancarán, los `one-shot` no
+"Normal" processes, if they stop, will be restarted, `one-shot` processes won't
 
-Estos procesos no pueden seguir la ejecución fuera del horario establecido. Si el proceso sigue en ejecución cuando termina su horario, se inciará el proceso de parada
+These processes cannot continue execution outside the established schedule. If the process is still running when its schedule ends, the stop process will be initiated
 
 ```toml
 init = { command = "sleep 1", timeout = "3s" }
@@ -404,11 +396,11 @@ It will attempt once, and in case of failure, it will transition to the `Stoppin
 before = { command = "sleep 1", timeout = "3s" }
 ```
 
-Aquí se puede poner un comando a ejecutar antes que el comando de este proceso
+Here you can put a command to execute before this process command
 
-Si la ejecución de before tiene éxito, continuará con los pasos para ejecutar este proceso
+If the execution of before is successful, it will continue with the steps to execute this process
 
-Si la ejecución de before falla, pasará a stopped y se reintentará más tarde
+If the execution of before fails, it will go to stopped and be retried later
 
 
 ```toml
@@ -435,28 +427,28 @@ In such cases, the stop command can be used.
 
 ## Command
 
-La configuración estándar es...
+The standard configuration is...
 
 ```toml
 command = "sleep 5555"
 ```
 
-Esto ejecutará el comando con los parámetros seleccionados
+This will execute the command with the selected parameters
 
-Se anotará el `pid` del proceso para vigilar que no se detenga antes de tiempo
+The `pid` of the process will be recorded to monitor that it doesn't stop prematurely
 
-En caso de parada, se reiniciará
+In case of a stop, it will be restarted
 
-Si llega la hora de parada y el proceso sigue corriendo, el sistema lo parará con una señal `SIGTERM`, y si tras varios reintentos no se para, se enviará la señal `SIGKILL`
+If the stop time arrives and the process is still running, the system will stop it with a `SIGTERM` signal, and if after several retries it doesn't stop, a `SIGKILL` signal will be sent
 
 
-Si queremos que el comando sea una expresión del shell y no sólamente un programa con parámetros, lo indicaremos con...
+If we want the command to be a shell expression and not just a program with parameters, we'll indicate it with...
 
 ```toml
 command = { line = "echo hi &&  &&  sleep 2  && echo hi2  &&  sleep 555", type = "expression" }
 ```
 
-> DANGER! Esto puede comprometer la gestión por `pid`del tiempo de vida de los procesos. Ver gestión tiempo de vida de procesos para más detalle
+> DANGER! This can compromise the `pid` management of process lifetime. See process lifetime management for more detail
 
 
 ## Change only the command...
@@ -557,25 +549,25 @@ Also it will check horphan references
 
 
 
-## Gestión de tiempo de vida de los procesos
+## Process Lifetime Management
 
-Por defecto, en comandos sencillos (que son programas con parámetros) se utilizará el `pid` del sistema obtenido al lanzar el proceso para vigilar que este sigue funcionando, o detenerlo cuando sea preciso
+By default, in simple commands (which are programs with parameters) the system `pid` obtained when launching the process will be used to monitor that it continues to work, or stop it when necessary
 
-En algunos casos, se puede requerir expresiones de `shell`
+In some cases, `shell` expressions may be required
 
 ```toml
 command = { line = "echo hi &&   sleep 333 ;  echo  end", type = "expression" }
 ```
 
-El problema, es que esto puede generar múltiples procesos dependiendo del sistema en ejecución, y la gestión del tiempo de vida y señales, también dependerá del sistema
+The problem is that this can generate multiple processes depending on the running system, and lifetime and signal management will also depend on the system
 
-Adicionalmente `kill -9` en uno de los procesos de una expresión, no será necesariamente propagado a otros procesos
+Additionally `kill -9` on one of the processes in an expression will not necessarily be propagated to other processes
 
-Algunso procesos también pueden lanzar varios procesos, y el proceso objetivo podría no ser el proceso del que se captura el `pid`
+Some processes can also launch multiple processes, and the target process might not be the process whose `pid` is captured
 
-Para estas situaciones hay varias opciones
+For these situations there are several options
 
-Utilizar una combinación de parámetros
+Use a combination of parameters
 
 ```toml
 init = "..."
@@ -583,43 +575,43 @@ health-check = "..."
 stop = "..."
 ```
 
-`health-check`  puede recibir un comando con time-out
+`health-check` can receive a command with timeout
 
-Se puede verificar si un socket está operativo, o si se ha creado un fichero lock... el comando dependerá del contexto
+You can verify if a socket is operational, or if a lock file has been created... the command will depend on the context
 
-Opcionalmente a `health-check` se le puede indicar un directorio a vigilar que hay actividad de ficheros
+Optionally, `health-check` can be given a directory to monitor for file activity
 
-La opción de vigilar un directorio, es muy interesante porque en caso de que el proceso se quede bloqueado, el `pid` seguirá vivo, pero al no haber actividad, el sistema lo reiniciará
+The option to monitor a directory is very interesting because if the process gets blocked, the `pid` will still be alive, but without activity, the system will restart it
 
-> DANGER! Si el proceso tarda mucho en arrancar, y se consulta el `health-check` antes de que esté operativo, el sistema lo dará como no operativo y marcará el proceso como parado. ESTO PODRÍA PROVOCAR ARRANQUES DUPLICADOS
+> DANGER! If the process takes a long time to start, and the `health-check` is queried before it's operational, the system will consider it as non-operational and mark the process as stopped. THIS COULD CAUSE DUPLICATE STARTS
 
-Para evitar arranques duplicados por problemas de concurrencia, en `init` conviene asegurarse de utilizar un comando seguro para parar el proceso/servicio
+To avoid duplicate starts due to concurrency issues, in `init` it's advisable to ensure using a safe command to stop the process/service
 
 
-Existe la posiblidad de utilizar una expresión de `shell` en la que podamos informar a `procman` el pid objetivo a vigilar/gestionar
+There is the possibility of using a `shell` expression where we can inform `procman` of the target pid to monitor/manage
 
 ```toml
 command = { line = "echo hi &&  echo $$PROCMAN_PID_FILE$$  &&  sleep 2  && (sleep 333 &  echo  $! > $$PROCMAN_PID_FILE$$)", type = "pid-file" }
 ```
 
-Se puede utilizar también como variable de entorno
+It can also be used as an environment variable
 
 ```toml
 command = { line = "echo hi &&  echo $$PROCMAN_PID_FILE$$  &&  sleep 2  && (sleep 333 &  echo  $! > $PROCMAN_PID_FILE)", type = "pid-file" }
 ```
 
-En el momento actual, si se configura un comando con pid-file y este fichero no se genera, este proceso/servicio quedará indefinidamente bloqueado y requerirá una intervención manual para su corrección
+Currently, if a command is configured with pid-file and this file is not generated, this process/service will be indefinitely blocked and will require manual intervention for correction
 
 
-### Caso podman
+### Podman case
 
-Tenemos la ventaja de que se puede configurar en `before` una parada y borrado del contenedor
+We have the advantage that a stop and deletion of the container can be configured in `before`
 
 ```toml
 before = "podman stop -t4 test ||  true   &&  podman rm -f test  ||  true"
 ```
 
-Esto garantiza no ejecutar dos veces dicho contenedor
+This guarantees not executing said container twice
 
 
 
@@ -722,7 +714,7 @@ stateDiagram-v2
 
 ----
 
-En revisión
+Under review
 
 
 
@@ -798,7 +790,3 @@ apply-on = "2024-10-01T12:00:00"
 
 > **IMPORTANT!**  
 > It is highly recommended to always use containers with `--init`
-
-
-
-
