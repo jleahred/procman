@@ -1,5 +1,5 @@
 uid = "550e8400-e29b-41d4-a716-446655440000"
-file_format = "0"
+file-format = "0"
 
 
 # ---------------------------------------------
@@ -8,15 +8,15 @@ file_format = "0"
 [[process]]
 id = "example_process"
 command = "echo 'Hello, World!' && sleep 10"
-apply_on = "2024-10-01T12:00:00"
+apply-on = "2024-10-01T12:00:00"
 type = "normal"                              # optional  normal/fake
 
 [process.schedule]
-start_time = "00:00:00"                  # optional
-stop_time = "23:59:00"                   # optional
-week_days = ["mon", "wed", "thu", "sun"] # optional
-# week_days = "mon-fri"   # also valid
-# week_days = "all"   # also valid
+start-time = "00:00:00"                  # optional
+stop-time = "23:59:00"                   # optional
+week-days = ["mon", "wed", "thu", "sun"] # optional
+# week-days = "mon-fri"   # also valid
+# week-days = "all"   # also valid
 
 [process.init] # optional
 command = "sleep 1"

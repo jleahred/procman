@@ -6,7 +6,7 @@ use choose_file::ChooseFileState;
 use crossterm::{
     event::{self, Event, KeyCode, KeyEvent, KeyEventKind},
     execute,
-    terminal::EnterAlternateScreen,
+    terminal::{disable_raw_mode, EnterAlternateScreen},
 };
 use once_cell::sync::Lazy;
 use processes::Processes;
@@ -48,7 +48,6 @@ enum Command {
 }
 
 pub(crate) fn run() -> io::Result<()> {
-    //     let stdout = io::stdout(); //  todo:
     let stdout = io::stdout();
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
@@ -62,7 +61,7 @@ pub(crate) fn run() -> io::Result<()> {
     };
 
     let app_result = app.run(&mut terminal);
-
+    disable_raw_mode()?;
     ratatui::restore();
 
     app_result

@@ -1,4 +1,3 @@
-use crate::types::config::ProcessType;
 use crate::types::running_status::ProcessStatus;
 
 impl super::WatchNow {
@@ -8,13 +7,8 @@ impl super::WatchNow {
             let process_watched = proc_info.process_watched.clone();
             match (process_config, process_watched) {
                 (Some(process_config), Some(running)) => match running.status {
-                    ProcessStatus::Stopped => match process_config.process_type {
-                        ProcessType::Fake => {
-                            continue;
-                        }
-                        ProcessType::Normal | ProcessType::PodmanCid => {}
-
-                        ProcessType::OneShot => {
+                    ProcessStatus::Stopped => {
+                        if process_config.one_shot {
                             if running.applied_on.date() < chrono::Local::now().naive_local().date()
                             {
                                 println!(
@@ -24,8 +18,10 @@ impl super::WatchNow {
                             } else {
                                 proc_info.process_config = None;
                             }
+                        } else {
+                            continue;
                         }
-                    },
+                    }
                     ProcessStatus::Running { .. }
                     | ProcessStatus::PendingBeforeCmd
                     | ProcessStatus::PendingInitCmd { .. }

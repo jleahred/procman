@@ -148,17 +148,17 @@ fn send_kill_or_command_stop(
                     println!(
                         "[{}] executing command stop {}",
                         proc_id.0,
-                        &command_stop.command().0
+                        &command_stop.command().str()
                     );
-                    let result = match run_command_with_timeout(&command_stop.command().0, timeout)
-                    {
-                        Ok(()) => {
-                            println!("[{}] Command stop succeeded for process", proc_id.0);
-                        }
-                        Err(err) => {
-                            eprintln!("[{}] Command stop failed.  {}", proc_id.0, err);
-                        }
-                    };
+                    let result =
+                        match run_command_with_timeout(&command_stop.command().str(), timeout) {
+                            Ok(()) => {
+                                println!("[{}] Command stop succeeded for process", proc_id.0);
+                            }
+                            Err(err) => {
+                                eprintln!("[{}] Command stop failed.  {}", proc_id.0, err);
+                            }
+                        };
                     let _ = kill_process(pid, force);
                     result
                 } else {

@@ -139,7 +139,7 @@ pub(super) fn render_processes(frame: &mut Frame, area: Rect, processes: &Proces
             };
 
             let command = match process_config {
-                Some(config) => config.command.0.to_string(),
+                Some(config) => config.command.str().to_string(),
                 None => String::from("No command"),
             };
             Row::new(vec![
@@ -153,7 +153,7 @@ pub(super) fn render_processes(frame: &mut Frame, area: Rect, processes: &Proces
         .iter()
         .filter(|(proc_id, _)| !processes.watched.processes.contains_key(proc_id))
         .map(|(proc_id, process_config)| {
-            let command = process_config.command.0.to_string();
+            let command = process_config.command.str().to_string();
             Row::new(vec![
                 Cell::from(proc_id.0.to_string()),
                 Cell::from("cfg inactive").fg(Color::Yellow).italic(),

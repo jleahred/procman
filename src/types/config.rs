@@ -9,19 +9,22 @@ mod tests;
 
 #[derive(Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
+#[serde(rename_all = "kebab-case")]
 pub(crate) struct Config {
     pub(crate) uid: ConfigUid,
-    #[serde(rename = "file_format")]
+    #[serde(rename = "file-format")]
     pub(crate) _file_format: String,
     pub(crate) process: Vec<ProcessConfig>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
+#[serde(rename_all = "kebab-case")]
 pub(crate) struct ProcessConfig {
     pub(crate) id: ProcessId,
     pub(crate) command: Command,
     pub(crate) apply_on: NaiveDateTime,
+    pub(crate) work_dir: Option<std::path::PathBuf>,
     /// Command to execute when the process is running
     /// for the process to transition to the running state, the command must complete successfully
     /// it will only be attempted once
@@ -48,11 +51,14 @@ pub(crate) struct ProcessConfig {
     #[serde(default)]
     pub(crate) schedule: Option<Schedule>,
 
-    #[serde(default, rename = "type")]
-    pub(crate) process_type: ProcessType,
+    #[serde(default)]
+    pub(crate) one_shot: bool,
 
     #[serde(default)]
     pub(crate) depends_on: Vec<ProcessId>,
+
+    #[serde(default)]
+    pub(crate) fake: bool,
 }
 
 pub(crate) struct ConfigError(pub(crate) String);
@@ -66,19 +72,85 @@ pub(crate) struct ProcessId(pub(crate) String);
 #[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Debug)]
 pub(crate) struct ConfigUid(pub(crate) String);
 
-#[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Debug)]
-pub(crate) struct Command(pub(crate) String);
-
-#[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Debug)]
+#[derive(Deserialize, Serialize, PartialEq, Eq, Clone, Debug)]
 #[serde(deny_unknown_fields)]
-pub(crate) struct CommandInit {
-    pub(crate) command: Command,
-    #[serde(with = "humantime_serde")]
-    pub(crate) timeout: Option<std::time::Duration>,
+#[serde(rename_all = "kebab-case")]
+#[serde(untagged)]
+pub(crate) enum Command {
+    Simple(String),
+    Detailed(CommandDetail),
 }
 
-#[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Debug)]
+#[derive(Deserialize, Serialize, PartialEq, Eq, Clone, Debug)]
 #[serde(deny_unknown_fields)]
+#[serde(rename_all = "kebab-case")]
+pub(crate) struct CommandDetail {
+    line: String,
+    #[serde(default, rename = "type")]
+    cmd_type: CommandType,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+// #[serde(rename_all = "lowercase")]
+#[serde(rename_all = "kebab-case")]
+pub(crate) enum CommandType {
+    Simple,
+    Expresssion,
+    /// podman running detached and returning the cid
+    /// podman run -d
+    /// With cid, we will look for real process pid on system
+    PodmanCid,
+}
+
+impl Command {
+    pub(crate) fn str(&self) -> &str {
+        match self {
+            Command::Simple(command) => command,
+            Command::Detailed(CommandDetail { line, .. }) => line,
+        }
+    }
+    pub(crate) fn cmd_type(&self) -> &CommandType {
+        match self {
+            Command::Simple(_command) => &CommandType::Simple,
+            Command::Detailed(CommandDetail { cmd_type, .. }) => cmd_type,
+        }
+    }
+}
+
+#[derive(Deserialize, Serialize, PartialEq, Eq, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "kebab-case")]
+#[serde(untagged)]
+pub(crate) enum CommandInit {
+    Simple(Command),
+    Detailed {
+        command: Command,
+        #[serde(with = "humantime_serde")]
+        #[serde(default)]
+        timeout: Option<std::time::Duration>,
+    },
+}
+impl CommandInit {
+    pub(crate) fn command(&self) -> &Command {
+        match self {
+            CommandInit::Simple(command) => command,
+            CommandInit::Detailed { command, .. } => command,
+        }
+    }
+    pub(crate) fn timeout(&self) -> std::time::Duration {
+        match self {
+            CommandInit::Simple(_) => std::time::Duration::from_secs(10),
+            CommandInit::Detailed { timeout, .. } => {
+                timeout.unwrap_or_else(|| std::time::Duration::from_secs(10))
+            }
+        }
+    }
+}
+
+#[derive(Deserialize, Serialize, PartialEq, Eq, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "kebab-case")]
 #[serde(untagged)]
 pub(crate) enum CommandBefore {
     Simple(Command),
@@ -106,16 +178,18 @@ impl CommandBefore {
     }
 }
 
-#[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Debug)]
+#[derive(Deserialize, Serialize, PartialEq, Eq, Clone, Debug)]
 #[serde(deny_unknown_fields)]
+#[serde(rename_all = "kebab-case")]
 #[serde(untagged)]
 pub(crate) enum CheckHealth {
     Command(CommandCheckHealth),
     FolderActivity(FolderActivityCheckHealth),
 }
 
-#[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Debug)]
+#[derive(Deserialize, Serialize, PartialEq, Eq, Clone, Debug)]
 #[serde(deny_unknown_fields)]
+#[serde(rename_all = "kebab-case")]
 #[serde(untagged)]
 pub(crate) enum CommandCheckHealth {
     Simple(Command),
@@ -145,6 +219,7 @@ impl CommandCheckHealth {
 
 #[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Debug)]
 #[serde(deny_unknown_fields)]
+#[serde(rename_all = "kebab-case")]
 pub(crate) struct FolderActivityCheckHealth {
     pub(crate) folder: std::path::PathBuf,
     #[serde(with = "humantime_serde")]
@@ -160,8 +235,9 @@ impl FolderActivityCheckHealth {
     }
 }
 
-#[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Debug)]
+#[derive(Deserialize, Serialize, PartialEq, Eq, Clone, Debug)]
 #[serde(deny_unknown_fields)]
+#[serde(rename_all = "kebab-case")]
 #[serde(untagged)]
 pub(crate) enum CommandStop {
     Simple(Command),
@@ -192,28 +268,13 @@ impl CommandStop {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
+#[serde(rename_all = "kebab-case")]
 pub(crate) struct Schedule {
     #[serde(default)]
     pub(crate) week_days: DaySelection,
 
     pub(crate) start_time: NaiveTime,
     pub(crate) stop_time: NaiveTime,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-#[serde(deny_unknown_fields)]
-#[serde(rename_all = "lowercase")]
-pub(crate) enum ProcessType {
-    Normal,
-    Fake,
-    /// When the process ends, it does not restart
-    #[serde(rename = "one-shot")]
-    OneShot,
-    /// podman running detached and returning the cid
-    /// podman run -d
-    /// With cid, we will look for real process pid on system
-    #[serde(rename = "podman_cid")]
-    PodmanCid,
 }
 
 pub(crate) struct ActiveProcessByConfig(pub(crate) HashMap<ProcessId, ProcessConfig>);
@@ -228,15 +289,15 @@ impl Config {
     }
 }
 
-impl Default for ProcessType {
+impl Default for CommandType {
     fn default() -> Self {
-        ProcessType::Normal
+        CommandType::Simple
     }
 }
 
 impl ProcessConfig {
     pub(crate) fn check_config(&self) -> Result<(), ConfigError> {
-        if self.command.0.is_empty() {
+        if self.command.str().is_empty() {
             return Err(ConfigError("Command cannot be empty".to_string()));
         }
         imp::is_valid_start_stop(self)

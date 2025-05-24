@@ -17,10 +17,10 @@ impl super::WatchNow {
                             println!(
                                 "[{}] running before command  {}",
                                 proc_id.0,
-                                before.command().0
+                                before.command().str()
                             );
                             let timeout = before.timeout();
-                            match run_command_with_timeout(&before.command().0, timeout) {
+                            match run_command_with_timeout(&before.command().str(), timeout) {
                                 Ok(()) => {
                                     println!(
                                         "[{}] Before command succeeded for process",

@@ -44,9 +44,10 @@ impl Config {
                 }
                 template_map
             } else {
-                return Err(ConfigError(
-                    "No [[template]] section found in the TOML file".to_string(),
-                ));
+                return Ok(Expanded(content.clone()));
+                // return Err(ConfigError(
+                //     "No [[template]] section found in the TOML file".to_string(),
+                // ));
             };
 
         imp::expand_template(&content, &templates)
@@ -154,6 +155,10 @@ pub(super) fn get_active_procs_by_config(config: &Config) -> ActiveProcessByConf
     let mut process_map: HashMap<ProcessId, ProcessConfig> = HashMap::new();
 
     for process in &config.process {
+        if process.fake {
+            // println!("[{}] Process is fake, skipping...", process.id.0);
+            continue;
+        }
         if process.apply_on > now {
             continue;
         }
@@ -167,14 +172,6 @@ pub(super) fn get_active_procs_by_config(config: &Config) -> ActiveProcessByConf
             }
 
             if time < schedule.start_time || time >= schedule.stop_time {
-                continue;
-            }
-        }
-
-        match process.process_type {
-            ProcessType::Normal | ProcessType::PodmanCid | ProcessType::OneShot => {}
-            ProcessType::Fake => {
-                // println!("[{}] Process type is fake, skipping...", process.id.0);
                 continue;
             }
         }

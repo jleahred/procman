@@ -3,7 +3,6 @@ use crate::types::running_status::ProcessWatched;
 use std::process::Command;
 use std::thread;
 use std::time;
-use std::time::Duration;
 
 impl super::WatchNow {
     pub(super) fn run_init_cmd(mut self) -> Result<Self, String> {
@@ -20,9 +19,12 @@ impl super::WatchNow {
                         health_check: _,
                     } => match &process_config.init {
                         Some(init) => {
-                            println!("[{}] running init command  {}", proc_id.0, init.command.0);
-                            let timeout = init.timeout.unwrap_or(Duration::from_secs(10));
-                            match run_command_with_timeout(&init.command.0, timeout) {
+                            println!(
+                                "[{}] running init command  {}",
+                                proc_id.0,
+                                init.command().str()
+                            );
+                            match run_command_with_timeout(&init.command().str(), init.timeout()) {
                                 Ok(()) => {
                                     println!("[{}] Init command succeeded for process", proc_id.0);
                                     proc_info.process_watched = Some(ProcessWatched {

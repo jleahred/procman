@@ -29,6 +29,10 @@ pub(crate) enum Commands {
         /// configuration file to use. toml format with info about the processes to run
         processes_filename: PathBuf,
     },
+    /// Generate a monitor process file with minimum example with the given filename
+    GenFile {
+        filename: Option<PathBuf>,
+    },
 }
 
 pub(crate) fn parse() -> Cli {

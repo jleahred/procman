@@ -1,8 +1,9 @@
 mod check_run_once;
 mod cli_params;
-mod watch_now;
+mod gen_simple_process_toml;
 mod tui;
 mod types;
+mod watch_now;
 
 use std::path::PathBuf;
 use std::process::Command;
@@ -10,33 +11,28 @@ use std::time::Duration;
 use std::{env, thread};
 use types::config::Config;
 
-// run supervised
-// use std::process::{Child};
-// use std::{io};
-// use nix::libc;
-// use std::os::unix::process::CommandExt;
-
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() == 3 && args[1] == "--watch-now" {
-        let full_proc_file_name = &PathBuf::from(&args[2]).canonicalize().unwrap_or_else(|err| {
-            eprintln!("CRITIC: Failed to get absolute path: {}", err);
-            std::process::exit(1);
-        });
+        let full_proc_file_name = &PathBuf::from(&args[2])
+            .canonicalize()
+            .unwrap_or_else(|err| {
+                eprintln!("CRITIC: Failed to get absolute path: {}", err);
+                std::process::exit(1);
+            });
 
         if let Err(err) = watch_now::watch_now(full_proc_file_name) {
             eprintln!("CRITIC: canceling check   {}", err);
             std::process::exit(1);
         }
         return;
+        // } else if args.len() == 3 && args[1] == "--supervise" {
+        //     run_supervised(&args[2]).unwrap_or_else(|err| {
+        //         eprintln!("CRITIC: {}", err);
+        //         std::process::exit(1);
+        //     });
+        //     return;
     }
-    // else if args.len() == 3 && args[1] == "--supervise" {
-    //     run_supervised(&args[2]).unwrap_or_else(|err| {
-    //         eprintln!("CRITIC: {}", err);
-    //         std::process::exit(1);
-    //     });
-    //     return;
-    // }
 
     let cli_params = cli_params::parse();
 
@@ -62,7 +58,10 @@ fn main() {
                 eprintln!("CRITIC: Failed to read config file: {}", err.0);
                 std::process::exit(1);
             });
-            println!("Check config OK: {}", processes_filename.to_str().unwrap_or("?"));
+            println!(
+                "Check config OK: {}",
+                processes_filename.to_str().unwrap_or("?")
+            );
         }
         cli_params::Commands::Uid => {
             println!(
@@ -71,17 +70,30 @@ fn main() {
             );
             return;
         }
-        cli_params::Commands::Tui  => {
+        cli_params::Commands::Tui => {
             tui::run().unwrap();
         }
         cli_params::Commands::ExpandTemplates { processes_filename } => {
-            println!("Expanding templates: {}", processes_filename.to_str().unwrap_or("?"));
+            println!(
+                "Expanding templates: {}",
+                processes_filename.to_str().unwrap_or("?")
+            );
             let expanded = Config::read_and_expand(&processes_filename).unwrap_or_else(|err| {
                 eprintln!("CRITIC: Failed to read config file: {}", err.0);
                 std::process::exit(1);
             });
-            println!("Expanded config: {} .....................................", processes_filename.to_str().unwrap_or("?"));
+            println!(
+                "Expanded config: {} .....................................",
+                processes_filename.to_str().unwrap_or("?")
+            );
             println!("{}", expanded.0);
+        }
+        cli_params::Commands::GenFile { filename } => {
+            if let Err(err) = gen_simple_process_toml::create(filename.as_ref()) {
+                eprintln!("CRITIC: {}", err);
+                std::process::exit(1);
+            }
+            println!("Generated simple process file successfully.");
         }
     }
 }
@@ -90,9 +102,8 @@ fn run_in_loop(full_proc_file_name: &PathBuf) {
     loop {
         let current_exe = env::current_exe().expect("CRITIC: Can't get current executable path");
 
-
         // Create a new process
-        let mut child = 
+        let mut child =
             //Command::new(current_exe)
             Command::new("setsid")
             .arg(current_exe)
@@ -110,35 +121,19 @@ fn run_in_loop(full_proc_file_name: &PathBuf) {
     }
 }
 
-
-// fn run_supervised(
-//     command: &str,
-// ) -> Result<u32, io::Error> {
-//     unsafe {
+// fn run_supervised(command: &str) -> Result<u32, io::Error> {
 //     let mut child: Child = Command::new("sh")
 //         .arg("-c")
 //         .arg(&command)
-//         .pre_exec(|| {
-//             // PR_SET_PDEATHSIG = 1
-//             // SIGKILL = 9
-//             if libc::prctl(libc::PR_SET_PDEATHSIG, libc::SIGKILL) != 0 {
-//                 return Err(std::io::Error::last_os_error());
-//             }
-//             Ok(())
-//         })
 //         .env("PROCMAN", &command)
 //         .spawn()?;
-        
-//         //  todo convendría desconectar la salida de error y la salida estándar para evitar zombis?
-
-//         println!("New SUPERVISED process created with PID: {}", child.id());
-
-//         if child.wait().is_err() {
-//             eprintln!("Error waiting for child process");
-//         } else {
-//             println!("supervised finished OK");
-//         }
-
-//     Ok(child.id())
+//     //  todo convendría desconectar la salida de error y la salida estándar para evitar zombis?
+//     println!("New SUPERVISED process created with PID: {}", child.id());
+//     if child.wait().is_err() {
+//         eprintln!("Error waiting for child process");
+//     } else {
+//         println!("supervised finished OK");
 //     }
+//     Ok(child.id())
+//     // }
 // }

@@ -4,7 +4,7 @@ use std::fs::File;
 use std::path::{Path, PathBuf};
 
 pub(super) fn check(lock_file_name: &str) -> Result<File, String> {
-    //  todo: /tmp/procman here???
+    //  todo:2 /tmp/procman here???
     fs::create_dir_all("/tmp/procman/")
         .map_err(|e| format!("Failed to create directory on {}: {}", "/tmp/procman/", e))?;
 

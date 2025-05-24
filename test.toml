@@ -1,16 +1,21 @@
 uid = "550e8400-e29b-41d4-a716-4466554400001"
-file_format = "0"
+file-format = "0"
 
 # templates = [ "templates.toml" ]
 
 
 [[process]]
 id = "A"
-command = "echo 'hi' && sleep 2222"
-apply_on = "2024-11-01T12:00:00"
-# type = "one-shot"
+# command = "sh -c \"echo 'hi' && sleep 2222\""
+
+# command = { line = "sleep 2222", type = "simple" }
+work-dir = "/tmp"
+command = "sleep 2222"
+apply-on = "2024-11-01T12:00:00"
+# type = "simple"
+# one-shot = true
 # schedule = { start_time = "01:00:00", stop_time = "23:59:00" }
-health_check = { folder = "./fake", inactive_time = "10s" }
+# health_check = { folder = "./fake", inactive_time = "10s" }
 
 # [[process]]
 # id = "A"
@@ -91,11 +96,11 @@ health_check = { folder = "./fake", inactive_time = "10s" }
 # stop = "podman stop -t4 {{ name }} || true && podman rm -f {{ name }}"
 
 
-[[template]]
-name = "PODMAN"
-template = '''
-command = "podman run --init --rm --name {{ container_name }} {{ image }} {{ command }}"
-# before = "podman stop -t4 {{ container_name }} || true && podman rm -f {{ container_name }}"
-# health_check = "[ \"$(podman inspect --format '{{ '{{.State.Status}}' }}' {{ container_name }})\" = \"running\" ]"
-# stop = "podman stop -t4 {{ container_name }} || true && podman rm -f {{ container_name }}"
-'''
+# [[template]]
+# name = "PODMAN"
+# template = '''
+# command = "podman run --init --rm --name {{ container_name }} {{ image }} {{ command }}"
+# # before = "podman stop -t4 {{ container_name }} || true && podman rm -f {{ container_name }}"
+# # health_check = "[ \"$(podman inspect --format '{{ '{{.State.Status}}' }}' {{ container_name }})\" = \"running\" ]"
+# # stop = "podman stop -t4 {{ container_name }} || true && podman rm -f {{ container_name }}"
+# '''

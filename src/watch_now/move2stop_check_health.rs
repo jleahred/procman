@@ -84,7 +84,7 @@ impl super::WatchNow {
 fn is_process_running(health_check: &CheckHealth) -> bool {
     match health_check {
         CheckHealth::Command(health_check) => {
-            match run_command_with_timeout(&health_check.command().0, health_check.timeout()) {
+            match run_command_with_timeout(&health_check.command().str(), health_check.timeout()) {
                 Ok(()) => true,
                 Err(_err) => false,
             }

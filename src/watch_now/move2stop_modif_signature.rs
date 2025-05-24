@@ -51,6 +51,25 @@ impl super::WatchNow {
     }
 }
 
+// fn get_signature(pid: u32) -> std::io::Result<String> {
+//     let path = format!("/proc/{}/environ", pid);
+//     let environ = fs::read_to_string(&path)?;
+//     for entry in environ.split('\0') {
+//         if let Some((key, value)) = entry.split_once('=') {
+//             if key == "PROCMAN_PUID" {
+//                 return Ok(value.to_string());
+//             }
+//         }
+//     }
+//     Err(std::io::Error::new(
+//         std::io::ErrorKind::NotFound,
+//         format!(
+//             "Environment variable PROCMAN_PUID not found for process {}",
+//             pid
+//         ),
+//     ))
+// }
+
 fn get_signature(pid: u32) -> std::io::Result<String> {
     let raw =
         String::from_utf8_lossy(&fs::read(format!("/proc/{}/cmdline", pid))?).replace('\0', " ");
