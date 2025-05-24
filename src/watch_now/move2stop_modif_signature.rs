@@ -12,7 +12,10 @@ impl super::WatchNow {
                 (_, _, Some(proc_watched)) => match proc_watched.status {
                     ProcessStatus::Stopped
                     | ProcessStatus::ShouldBeRunning
-                    | ProcessStatus::PendingBeforeCmd => {}
+                    | ProcessStatus::PendingBeforeCmd
+                    | ProcessStatus::WaittingPidFile { .. }
+                    | ProcessStatus::StoppingWaittingPidFile { .. } => {}
+                    // ----
                     ProcessStatus::Running {
                         pid, procman_uid, ..
                     }
@@ -23,10 +26,13 @@ impl super::WatchNow {
                         pid, procman_uid, ..
                     } => match get_signature(pid) {
                         Ok(signature) => {
-                            if signature != procman_uid {
+                            let compatible_signature = procman_uid.contains(signature.trim());
+
+                            // if signature != procman_uid {
+                            if !compatible_signature {
                                 eprintln!(
-                                        "[{}] Register Stopped process different signature (not stopping process)",
-                                        proc_id.0
+                                        "[{}] Register Stopped process different signature (not stopping process) <{}> not contained in  <{}>",
+                                        proc_id.0, signature.trim(), procman_uid
                                     );
                                 proc_info.process_watched = Some(ProcessWatched {
                                     id: proc_id.clone(),

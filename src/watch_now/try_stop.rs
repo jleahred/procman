@@ -49,12 +49,28 @@ impl super::WatchNow {
                         stop_command: _,
                         health_check: _,
                     }
+                    | ProcessStatus::WaittingPidFile {
+                        pid_file: _,
+                        pid: _,
+                        procman_uid: _,
+                        stop_command: _,
+                        health_check: _,
+                    }
                     | ProcessStatus::ShouldBeRunning
                     | ProcessStatus::PendingInitCmd {
                         pid: _,
                         procman_uid: _,
                         stop_command: _,
                         health_check: _,
+                    }
+                    | ProcessStatus::StoppingWaittingPidFile {
+                        pid_file: _,
+                        pid: _,
+                        procman_uid: _,
+                        health_check: _,
+                        retries: _,
+                        last_attempt: _,
+                        stop_command: _,
                     } => {}
                 },
                 (_, _, None) => {}

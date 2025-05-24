@@ -119,6 +119,14 @@ pub(super) fn render_processes(frame: &mut Frame, area: Rect, processes: &Proces
                     }
                     ProcessStatus::Stopping { .. } => Cell::from("stopping").fg(Color::Red).bold(),
                     ProcessStatus::Stopped { .. } => Cell::from("stopped").fg(Color::Red).bold(),
+                    ProcessStatus::WaittingPidFile { .. } => {
+                        Cell::from("waitting pid file").fg(Color::Red).bold()
+                    }
+                    ProcessStatus::StoppingWaittingPidFile { .. } => {
+                        Cell::from("stopping waitting pidfile")
+                            .fg(Color::Red)
+                            .bold()
+                    }
                 },
                 (None, Some(running)) => match running.status {
                     ProcessStatus::ShouldBeRunning => {
@@ -133,6 +141,14 @@ pub(super) fn render_processes(frame: &mut Frame, area: Rect, processes: &Proces
                     }
                     ProcessStatus::Stopping { .. } => Cell::from("stopping").fg(Color::Red).bold(),
                     ProcessStatus::Stopped { .. } => Cell::from("stopped").fg(Color::Yellow),
+                    ProcessStatus::WaittingPidFile { .. } => {
+                        Cell::from("waitting pid file").fg(Color::Red).bold()
+                    }
+                    ProcessStatus::StoppingWaittingPidFile { .. } => {
+                        Cell::from("stopping waitting pidfile")
+                            .fg(Color::Red)
+                            .bold()
+                    }
                 },
                 (Some(_), None) => Cell::from("PENDING").fg(Color::Red).bold(),
                 (_, _) => Cell::from("INCONSISTENCY").fg(Color::Red).bold(),

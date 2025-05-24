@@ -30,12 +30,19 @@ impl super::WatchNow {
                                 );
                                 run_process(run_process_simple, &process_config, proc_info);
                             }
-                            CommandType::Expresssion => {
+                            CommandType::Expression => {
                                 println!(
                                     "[{}] Running process     apply_on: {}",
                                     proc_id.0, process_config.apply_on
                                 );
                                 run_process(run_process_expression, &process_config, proc_info);
+                            }
+                            CommandType::PidFile => {
+                                println!(
+                                    "[{}] Running process     apply_on: {}",
+                                    proc_id.0, process_config.apply_on
+                                );
+                                run_process(run_process_pid_file, &process_config, proc_info);
                             }
                             CommandType::PodmanCid => {
                                 println!(
@@ -49,7 +56,9 @@ impl super::WatchNow {
                         | ProcessStatus::PendingBeforeCmd
                         | ProcessStatus::PendingInitCmd { .. }
                         | ProcessStatus::Stopping { .. }
-                        | ProcessStatus::Stopped { .. } => {}
+                        | ProcessStatus::Stopped { .. }
+                        | ProcessStatus::WaittingPidFile { .. }
+                        | ProcessStatus::StoppingWaittingPidFile { .. } => {}
                     }
                 }
                 _ => {}
@@ -60,7 +69,7 @@ impl super::WatchNow {
 }
 
 fn run_process(
-    runproc: fn(&config::Command, &Option<PathBuf>) -> Result<u32, io::Error>,
+    runproc: fn(&config::Command, &Option<PathBuf>) -> Result<(u32, Option<PathBuf>), io::Error>,
     process_config: &config::ProcessConfig,
     proc_info: &mut WatchNowProcInfo,
 ) {
@@ -69,29 +78,48 @@ fn run_process(
         &process_config.work_dir,
         // &procman_uid,
     ) {
-        Ok(pid) => {
-            println!(
-                "[{}] Launched process  with PID: {}   apply_on: {}",
-                process_config.id.0, pid, process_config.apply_on
-            );
-
+        Ok((pid, pid_file)) => {
             let procman_uid = get_cmdline(pid);
             // TODO:2 Mejorar con un UUID único
             // let procman_uid = uuid::Uuid::new_v4().to_string();
             match procman_uid {
-                Ok(procman_uid) => {
-                    proc_info.process_watched = Some(ProcessWatched {
-                        id: process_config.id.clone(),
-                        apply_on: process_config.apply_on,
-                        status: ProcessStatus::PendingInitCmd {
-                            pid,
-                            procman_uid,
-                            stop_command: process_config.stop.clone(),
-                            health_check: process_config.health_check.clone(),
-                        },
-                        applied_on: chrono::Local::now().naive_local(),
-                    });
-                }
+                Ok(procman_uid) => match pid_file {
+                    Some(pid_file) => {
+                        println!(
+                            "[{}] Launched process  waitting pid_file: {}   apply_on: {}",
+                            process_config.id.0, pid, process_config.apply_on
+                        );
+                        proc_info.process_watched = Some(ProcessWatched {
+                            id: process_config.id.clone(),
+                            apply_on: process_config.apply_on,
+                            status: ProcessStatus::WaittingPidFile {
+                                pid_file,
+                                pid,
+                                procman_uid,
+                                stop_command: process_config.stop.clone(),
+                                health_check: process_config.health_check.clone(),
+                            },
+                            applied_on: chrono::Local::now().naive_local(),
+                        });
+                    }
+                    None => {
+                        println!(
+                            "[{}] Launched process  with PID: {}   apply_on: {}",
+                            process_config.id.0, pid, process_config.apply_on
+                        );
+                        proc_info.process_watched = Some(ProcessWatched {
+                            id: process_config.id.clone(),
+                            apply_on: process_config.apply_on,
+                            status: ProcessStatus::PendingInitCmd {
+                                pid,
+                                procman_uid,
+                                stop_command: process_config.stop.clone(),
+                                health_check: process_config.health_check.clone(),
+                            },
+                            applied_on: chrono::Local::now().naive_local(),
+                        });
+                    }
+                },
                 Err(error) => {
                     eprintln!(
                         "[{}] Failed to launch process (getting cmd line): {}",
@@ -110,7 +138,7 @@ fn run_process_expression(
     command: &config::Command,
     work_dir: &Option<PathBuf>,
     // _proc_uuid: &str,
-) -> Result<u32, io::Error> {
+) -> Result<(u32, Option<PathBuf>), io::Error> {
     let mut cmd = Command::new("sh");
     if let Some(dir) = work_dir {
         cmd.current_dir(dir);
@@ -126,14 +154,60 @@ fn run_process_expression(
 
     thread::sleep(Duration::from_secs(1));
 
-    Ok(child.id())
+    Ok((child.id(), None))
+}
+
+fn run_process_pid_file(
+    command: &config::Command,
+    work_dir: &Option<PathBuf>,
+) -> Result<(u32, Option<PathBuf>), io::Error> {
+    let mut cmd = Command::new("sh");
+    if let Some(dir) = work_dir {
+        cmd.current_dir(dir);
+    }
+
+    let uid = uuid::Uuid::new_v4().to_string();
+    let file = format!("/tmp/procman/{}.pid", uid);
+
+    let child: Child = cmd
+        .arg("-c")
+        .arg(&command.str().replace("$$PROCMAN_PID_FILE$$", file.as_str()))
+        // .env("PROCMAN_PID_FILE", "proc_uuid")
+        .spawn()?;
+
+    // let start_time = std::time::Instant::now();
+    // let pid = loop {
+    //     if start_time.elapsed() > Duration::from_secs(30) {
+    //         return Err(io::Error::new(
+    //             io::ErrorKind::TimedOut,
+    //             "Timed out waiting for PID file",
+    //         ));
+    //     }
+
+    //     if let Ok(content) = fs::read_to_string(&file) {
+    //         fs::remove_file(&file).map_err(|e| {
+    //             io::Error::new(
+    //                 io::ErrorKind::Other,
+    //                 format!("Failed to remove PID file: {}", e),
+    //             )
+    //         })?;
+    //         if let Ok(pid) = content.trim().parse::<u32>() {
+    //             break pid;
+    //         }
+    //     }
+
+    //     thread::sleep(Duration::from_millis(100));
+    // };
+    thread::sleep(Duration::from_secs(1));
+
+    Ok((child.id(), Some(PathBuf::from(file))))
 }
 
 fn run_process_simple(
     command: &config::Command,
     work_dir: &Option<PathBuf>,
     // _proc_uuid: &str,
-) -> Result<u32, io::Error> {
+) -> Result<(u32, Option<PathBuf>), io::Error> {
     let mut parts = command.str().split_whitespace();
     let cmd = parts
         .next()
@@ -169,7 +243,7 @@ fn run_process_simple(
     // }
     // If the process is still running after 2 seconds, return its PID
 
-    Ok(child.id())
+    Ok((child.id(), None))
 }
 // )
 // -> Result<u32, io::Error> {
@@ -199,7 +273,7 @@ fn run_process_podman(
     command: &config::Command,
     work_dir: &Option<PathBuf>,
     // _proc_uuid: &str,
-) -> Result<u32, io::Error> {
+) -> Result<(u32, Option<PathBuf>), io::Error> {
     let mut cmd = Command::new("sh");
     if let Some(dir) = work_dir {
         cmd.current_dir(dir);
@@ -226,6 +300,7 @@ fn run_process_podman(
     thread::sleep(Duration::from_secs(1));
 
     get_real_pid_podman_detach(String::from_utf8_lossy(&output.stdout).as_ref())
+        .map(|pid| (pid, None))
 }
 
 use std::{fs, str};

@@ -6,12 +6,13 @@ file-format = "0"
 
 [[process]]
 id = "A"
-# command = "sh -c \"echo 'hi' && sleep 2222\""
-
-# command = { line = "sleep 2222", type = "simple" }
-work-dir = "/tmp"
-command = "sleep 2222"
 apply-on = "2024-11-01T12:00:00"
+fake = true
+
+command = { line = "echo hi &&  echo $$PROCMAN_PID_FILE$$  &&  sleep 2  && (sleep 333 &  echo  $! > $$PROCMAN_PID_FILE$$)", type = "pid-file" }
+# command = "sh -c \"echo 'hi' && sleep 2222\""
+# command = { line = "sleep 2222", type = "simple" }
+# work-dir = "/tmp"
 # type = "simple"
 # one-shot = true
 # schedule = { start_time = "01:00:00", stop_time = "23:59:00" }

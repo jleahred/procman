@@ -12,7 +12,8 @@ impl super::WatchNow {
                     ProcessStatus::Stopped
                     | ProcessStatus::ShouldBeRunning
                     | ProcessStatus::PendingBeforeCmd
-                    | ProcessStatus::Stopping { .. } => {}
+                    | ProcessStatus::Stopping { .. }
+                    | ProcessStatus::StoppingWaittingPidFile { .. } => {}
                     ProcessStatus::Running {
                         pid,
                         procman_uid,
@@ -54,6 +55,35 @@ impl super::WatchNow {
                                 id: proc_id.clone(),
                                 apply_on: proc_watched.apply_on,
                                 status: running_status::ProcessStatus::Stopping {
+                                    pid,
+                                    procman_uid,
+                                    retries: 0,
+                                    last_attempt: chrono::Local::now().naive_local(),
+                                    stop_command,
+                                    health_check,
+                                },
+                                applied_on: chrono::Local::now().naive_local(),
+                            });
+                        }
+                    }
+                    ProcessStatus::WaittingPidFile {
+                        pid_file,
+                        pid,
+                        procman_uid,
+                        stop_command,
+                        health_check,
+                    } => {
+                        if process_cfg.apply_on != proc_watched.apply_on {
+                            eprintln!(
+                                "[{}] Stopping waitting-pid process different apply on  {} != {}",
+                                proc_id.0, process_cfg.apply_on, proc_watched.apply_on
+                            );
+
+                            proc_info.process_watched = Some(ProcessWatched {
+                                id: proc_id.clone(),
+                                apply_on: proc_watched.apply_on,
+                                status: running_status::ProcessStatus::StoppingWaittingPidFile {
+                                    pid_file,
                                     pid,
                                     procman_uid,
                                     retries: 0,

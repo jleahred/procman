@@ -16,7 +16,9 @@ impl super::WatchNow {
                 (_, _, Some(proc_watched)) => match proc_watched.status {
                     ProcessStatus::Stopped
                     | ProcessStatus::ShouldBeRunning
-                    | ProcessStatus::PendingBeforeCmd => {}
+                    | ProcessStatus::PendingBeforeCmd
+                    | ProcessStatus::WaittingPidFile { .. }
+                    | ProcessStatus::StoppingWaittingPidFile { .. } => {}
                     //  ----
                     ProcessStatus::Stopping { health_check, .. } => {
                         if let Some(health_check) = health_check {

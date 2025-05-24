@@ -4,6 +4,15 @@
 ## TODO
 
 
+move2stop_check_health
+no es seguro
+si el proceso tarda un tiempo en arrancar y que el health_check diga que está OK
+se pondrá como stop, y se volverá a lanzar. REPETIDO
+
+
+* limpieza 
+    * stopped antiguos
+    * /tmp/procman no actualizados hace más de varios días
 * type -> file_pid   sh -c "echo 'hi' && sleep 2222 &  echo \$! > $PROCMAN_FILE_PID; wait"
 * documentar
 

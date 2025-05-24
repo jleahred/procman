@@ -59,8 +59,10 @@ impl super::WatchNow {
                     ProcessStatus::ShouldBeRunning
                     | ProcessStatus::PendingInitCmd { .. }
                     | ProcessStatus::Running { .. }
+                    | ProcessStatus::WaittingPidFile { .. }
                     | ProcessStatus::Stopping { .. }
-                    | ProcessStatus::Stopped { .. } => {}
+                    | ProcessStatus::Stopped { .. }
+                    | ProcessStatus::StoppingWaittingPidFile { .. } => {}
                 },
                 _ => {}
             }

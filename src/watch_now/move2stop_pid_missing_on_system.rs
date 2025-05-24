@@ -38,6 +38,8 @@ impl super::WatchNow {
                             }
                         }
                     }
+                    ProcessStatus::WaittingPidFile { .. }
+                    | ProcessStatus::StoppingWaittingPidFile { .. } => {}
                 },
                 (_, _, _) => {}
             }

@@ -31,6 +31,30 @@ impl super::WatchNow {
                             applied_on: chrono::Local::now().naive_local(),
                         });
                     }
+                    ProcessStatus::WaittingPidFile {
+                        pid_file,
+                        pid,
+                        procman_uid,
+                        stop_command,
+                        health_check,
+                    } => {
+                        println!("[{}] Stopping from waiting pid file", proc_id.0);
+
+                        process.process_watched = Some(ProcessWatched {
+                            id: proc_id.clone(),
+                            apply_on: proc_watched.apply_on,
+                            status: running_status::ProcessStatus::StoppingWaittingPidFile {
+                                pid_file,
+                                pid,
+                                procman_uid,
+                                retries: 0,
+                                last_attempt: chrono::Local::now().naive_local(),
+                                stop_command,
+                                health_check,
+                            },
+                            applied_on: chrono::Local::now().naive_local(),
+                        });
+                    }
                     ProcessStatus::ShouldBeRunning | ProcessStatus::PendingBeforeCmd => {
                         println!("[{}] Stopped from {:?}", proc_id.0, &proc_watched.status);
 
@@ -72,6 +96,7 @@ impl super::WatchNow {
                         stop_command: _,
                         health_check: _,
                     } => {}
+                    ProcessStatus::StoppingWaittingPidFile { .. } => {}
                 },
                 (_proc_id, _, _) => {}
             }

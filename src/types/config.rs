@@ -96,7 +96,8 @@ pub(crate) struct CommandDetail {
 #[serde(rename_all = "kebab-case")]
 pub(crate) enum CommandType {
     Simple,
-    Expresssion,
+    Expression,
+    PidFile,
     /// podman running detached and returning the cid
     /// podman run -d
     /// With cid, we will look for real process pid on system

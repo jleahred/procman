@@ -33,23 +33,40 @@ pub(crate) enum ProcessStatus {
     ShouldBeRunning,
     PendingInitCmd {
         pid: u32,
-        health_check: Option<CheckHealth>,
         procman_uid: String,
+        health_check: Option<CheckHealth>,
+        stop_command: Option<CommandStop>,
+    },
+    WaittingPidFile {
+        pid_file: PathBuf,
+        pid: u32,
+        procman_uid: String,
+        health_check: Option<CheckHealth>,
         stop_command: Option<CommandStop>,
     },
     Running {
         pid: u32,
         procman_uid: String,
-        stop_command: Option<CommandStop>,
         health_check: Option<CheckHealth>,
+        stop_command: Option<CommandStop>,
     },
     Stopping {
         pid: u32,
-        health_check: Option<CheckHealth>,
         procman_uid: String,
+        health_check: Option<CheckHealth>,
         retries: u32,
         last_attempt: NaiveDateTime,
         stop_command: Option<CommandStop>,
     },
     Stopped,
+
+    StoppingWaittingPidFile {
+        pid_file: PathBuf,
+        pid: u32,
+        procman_uid: String,
+        health_check: Option<CheckHealth>,
+        retries: u32,
+        last_attempt: NaiveDateTime,
+        stop_command: Option<CommandStop>,
+    },
 }
