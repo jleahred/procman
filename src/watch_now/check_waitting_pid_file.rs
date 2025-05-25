@@ -39,6 +39,7 @@ impl super::WatchNow {
                                         stop_command,
                                     },
                                     applied_on: chrono::Local::now().naive_local(),
+                                    last_runs: proc_watched.last_runs.clone(),
                                 });
                             }
                         } else {
@@ -79,6 +80,7 @@ impl super::WatchNow {
                                         stop_command,
                                     },
                                     applied_on: chrono::Local::now().naive_local(),
+                                    last_runs: proc_watched.last_runs.clone(),
                                 });
                             }
                         } else {
@@ -110,6 +112,7 @@ impl super::WatchNow {
                                     stop_command,
                                 },
                                 applied_on: chrono::Local::now().naive_local(),
+                                last_runs: proc_watched.last_runs.clone(),
                             });
                         }
                     }

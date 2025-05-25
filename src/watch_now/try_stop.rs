@@ -36,6 +36,7 @@ impl super::WatchNow {
                                 health_check: health_check.clone(),
                             },
                             applied_on: chrono::Local::now().naive_local(),
+                            last_runs: proc_watched.last_runs.clone(),
                         });
 
                         send_kill_or_command_stop(retries, proc_id, pid, stop_command)?;

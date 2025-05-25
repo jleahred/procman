@@ -37,6 +37,7 @@ impl super::WatchNow {
                                             health_check: process_config.health_check.clone(),
                                         },
                                         applied_on: chrono::Local::now().naive_local(),
+                                        last_runs: running.last_runs.clone(),
                                     });
                                 }
                                 Err(err) => {
@@ -54,6 +55,7 @@ impl super::WatchNow {
                                             health_check: process_config.health_check.clone(),
                                         },
                                         applied_on: chrono::Local::now().naive_local(),
+                                        last_runs: running.last_runs.clone(),
                                     });
                                 }
                             }
@@ -70,6 +72,7 @@ impl super::WatchNow {
                                     health_check: process_config.health_check.clone(),
                                 },
                                 applied_on: chrono::Local::now().naive_local(),
+                                last_runs: running.last_runs.clone(),
                             });
                         }
                     },

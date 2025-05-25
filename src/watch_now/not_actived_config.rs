@@ -29,6 +29,7 @@ impl super::WatchNow {
                                 health_check,
                             },
                             applied_on: chrono::Local::now().naive_local(),
+                            last_runs: proc_watched.last_runs.clone(),
                         });
                     }
                     ProcessStatus::WaittingPidFile {
@@ -53,6 +54,7 @@ impl super::WatchNow {
                                 health_check,
                             },
                             applied_on: chrono::Local::now().naive_local(),
+                            last_runs: proc_watched.last_runs.clone(),
                         });
                     }
                     ProcessStatus::ShouldBeRunning | ProcessStatus::PendingBeforeCmd => {
@@ -63,6 +65,7 @@ impl super::WatchNow {
                             apply_on: proc_watched.apply_on,
                             status: running_status::ProcessStatus::Stopped,
                             applied_on: chrono::Local::now().naive_local(),
+                            last_runs: proc_watched.last_runs.clone(),
                         });
                     }
                     ProcessStatus::PendingInitCmd {
@@ -85,6 +88,7 @@ impl super::WatchNow {
                                 health_check,
                             },
                             applied_on: chrono::Local::now().naive_local(),
+                            last_runs: proc_watched.last_runs.clone(),
                         });
                     }
                     ProcessStatus::Stopped => {}

@@ -7,7 +7,8 @@
 
 
 
-
+* limitar el número de arranques
+* log en sqlite, comando para consultar, añadir a tui
 * limpieza 
     * stopped antiguos
     * /tmp/procman no actualizados hace más de varios días

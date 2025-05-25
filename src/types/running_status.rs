@@ -4,7 +4,7 @@ use crate::types::config::{CommandStop, ConfigUid, ProcessId};
 use chrono::NaiveDateTime;
 pub(crate) use imp::load_running_status;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, path::PathBuf};
+use std::{collections::HashMap, collections::VecDeque, path::PathBuf};
 
 use super::config::CheckHealth;
 
@@ -25,6 +25,8 @@ pub(crate) struct ProcessWatched {
     pub(crate) apply_on: NaiveDateTime,
     pub(crate) status: ProcessStatus,
     pub(crate) applied_on: NaiveDateTime,
+    #[serde(default)]
+    pub(crate) last_runs: VecDeque<NaiveDateTime>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]

@@ -31,6 +31,7 @@ impl super::WatchNow {
                                         apply_on: process_config.apply_on,
                                         status: ProcessStatus::ShouldBeRunning,
                                         applied_on: chrono::Local::now().naive_local(),
+                                        last_runs: running.last_runs.clone(),
                                     });
                                 }
                                 Err(err) => {
@@ -41,6 +42,7 @@ impl super::WatchNow {
                                         apply_on: process_config.apply_on,
                                         status: ProcessStatus::Stopped,
                                         applied_on: chrono::Local::now().naive_local(),
+                                        last_runs: running.last_runs.clone(),
                                     });
                                 }
                             }
@@ -52,6 +54,7 @@ impl super::WatchNow {
                                 apply_on: process_config.apply_on,
                                 status: ProcessStatus::ShouldBeRunning,
                                 applied_on: chrono::Local::now().naive_local(),
+                                last_runs: running.last_runs.clone(),
                             });
                         }
                     },

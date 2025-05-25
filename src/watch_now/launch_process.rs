@@ -1,5 +1,6 @@
 use crate::types::config::{self, CommandType};
 use crate::types::running_status::{ProcessStatus, ProcessWatched};
+use std::collections::VecDeque;
 use std::path::PathBuf;
 use std::process::Stdio;
 use std::{
@@ -82,6 +83,16 @@ fn run_process(
             let procman_uid = get_cmdline(pid);
             // TODO:2 Mejorar con un UUID único
             // let procman_uid = uuid::Uuid::new_v4().to_string();
+
+            let last_runs_updated = {
+                let mut last_runs_updated = proc_info.process_watched.as_ref().map_or_else(
+                    || VecDeque::new(),
+                    |pw| pw.last_runs.iter().cloned().collect::<VecDeque<_>>(),
+                );
+                last_runs_updated.push_back(chrono::Local::now().naive_local());
+                last_runs_updated
+            };
+
             match procman_uid {
                 Ok(procman_uid) => match pid_file {
                     Some(pid_file) => {
@@ -100,6 +111,7 @@ fn run_process(
                                 health_check: process_config.health_check.clone(),
                             },
                             applied_on: chrono::Local::now().naive_local(),
+                            last_runs: last_runs_updated,
                         });
                     }
                     None => {
@@ -117,6 +129,7 @@ fn run_process(
                                 health_check: process_config.health_check.clone(),
                             },
                             applied_on: chrono::Local::now().naive_local(),
+                            last_runs: last_runs_updated,
                         });
                     }
                 },

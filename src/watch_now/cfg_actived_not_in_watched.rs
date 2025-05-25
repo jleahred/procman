@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use crate::types::running_status::{self, ProcessWatched};
 
 impl super::WatchNow {
@@ -14,6 +16,7 @@ impl super::WatchNow {
                         apply_on: proc_cfg.apply_on,
                         status: running_status::ProcessStatus::PendingBeforeCmd,
                         applied_on: chrono::Local::now().naive_local(),
+                        last_runs: VecDeque::new(),
                     });
 
                     println!(
