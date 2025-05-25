@@ -7,8 +7,8 @@
 
 
 
-* limitar el número de arranques
 * log en sqlite, comando para consultar, añadir a tui
+* comandos (parada completa, desbloqueo proceso...)
 * limpieza 
     * stopped antiguos
     * /tmp/procman no actualizados hace más de varios días
@@ -710,6 +710,24 @@ stateDiagram-v2
     Stopping --> Stopping: retry
 ```
 
+
+## Pitfalls
+
+### PID Control Failure
+
+If command execution with parameters is not used and expressions are opted for, it is important to ensure the correctness of such expressions.
+
+When using PID files, it is crucial that the file is always generated to prevent the process from being blocked while waiting for a file that never exists.
+
+This behavior is designed to be safer by not launching a process rather than risking it being launched in duplicate (or multiple times).
+
+### Frequent Process Startup Failures
+
+If a process continuously fails during startup, it will remain in the `TooMuchRuns` state for a while.
+
+Currently, the maximum number of executions within a 10-minute interval is 5.
+
+This may become configurable in the future.
 
 
 

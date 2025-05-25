@@ -9,7 +9,7 @@ impl super::WatchNow {
                 proc_info.process_watched.clone(),
             ) {
                 (_, _, Some(proc_watched)) => {
-                    if proc_watched.status != ProcessStatus::TooMuchRuns
+                    if proc_watched.status == ProcessStatus::Stopped
                         && proc_watched.last_runs.len() >= 5
                     {
                         eprintln!(

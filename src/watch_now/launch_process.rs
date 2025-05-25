@@ -81,6 +81,9 @@ fn run_process(
             |pw| pw.last_runs.iter().cloned().collect::<VecDeque<_>>(),
         );
         last_runs_updated.push_back(chrono::Local::now().naive_local());
+        while last_runs_updated.len() > 10 {
+            last_runs_updated.pop_front();
+        }
         last_runs_updated
     };
 
