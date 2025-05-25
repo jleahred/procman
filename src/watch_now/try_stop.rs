@@ -72,7 +72,8 @@ impl super::WatchNow {
                         retries: _,
                         last_attempt: _,
                         stop_command: _,
-                    } => {}
+                    }
+                    | ProcessStatus::TooMuchRuns => {}
                 },
                 (_, _, None) => {}
             }

@@ -11,7 +11,8 @@ impl super::WatchNow {
                 (_, _, Some(proc_watched)) => match proc_watched.status {
                     ProcessStatus::Stopped
                     | ProcessStatus::ShouldBeRunning
-                    | ProcessStatus::PendingBeforeCmd => {}
+                    | ProcessStatus::PendingBeforeCmd
+                    | ProcessStatus::TooMuchRuns => {}
                     //  ----
                     ProcessStatus::Running {
                         pid, health_check, ..

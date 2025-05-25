@@ -7,9 +7,9 @@ file-format = "0"
 [[process]]
 id = "A"
 apply-on = "2024-11-01T12:00:00"
-fake = true
 
-command = { line = "echo hi &&  echo $$PROCMAN_PID_FILE$$  &&  sleep 2  && (sleep 333 &  echo  $! > $$PROCMAN_PID_FILE$$)", type = "pid-file" }
+command = "fake"
+
 # command = "sh -c \"echo 'hi' && sleep 2222\""
 # command = { line = "sleep 2222", type = "simple" }
 # work-dir = "/tmp"

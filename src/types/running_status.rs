@@ -71,4 +71,5 @@ pub(crate) enum ProcessStatus {
         last_attempt: NaiveDateTime,
         stop_command: Option<CommandStop>,
     },
+    TooMuchRuns,
 }

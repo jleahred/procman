@@ -101,6 +101,7 @@ impl super::WatchNow {
                         health_check: _,
                     } => {}
                     ProcessStatus::StoppingWaittingPidFile { .. } => {}
+                    ProcessStatus::TooMuchRuns => {}
                 },
                 (_proc_id, _, _) => {}
             }

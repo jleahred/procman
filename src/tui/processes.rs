@@ -127,6 +127,9 @@ pub(super) fn render_processes(frame: &mut Frame, area: Rect, processes: &Proces
                             .fg(Color::Red)
                             .bold()
                     }
+                    ProcessStatus::TooMuchRuns { .. } => {
+                        Cell::from("too much runs").fg(Color::Red).bold()
+                    }
                 },
                 (None, Some(running)) => match running.status {
                     ProcessStatus::ShouldBeRunning => {
@@ -149,6 +152,7 @@ pub(super) fn render_processes(frame: &mut Frame, area: Rect, processes: &Proces
                             .fg(Color::Red)
                             .bold()
                     }
+                    ProcessStatus::TooMuchRuns => Cell::from("too much runs").fg(Color::Red).bold(),
                 },
                 (Some(_), None) => Cell::from("PENDING").fg(Color::Red).bold(),
                 (_, _) => Cell::from("INCONSISTENCY").fg(Color::Red).bold(),

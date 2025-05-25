@@ -59,7 +59,8 @@ impl super::WatchNow {
                         | ProcessStatus::Stopping { .. }
                         | ProcessStatus::Stopped { .. }
                         | ProcessStatus::WaittingPidFile { .. }
-                        | ProcessStatus::StoppingWaittingPidFile { .. } => {}
+                        | ProcessStatus::StoppingWaittingPidFile { .. }
+                        | ProcessStatus::TooMuchRuns => {}
                     }
                 }
                 _ => {}
@@ -74,6 +75,19 @@ fn run_process(
     process_config: &config::ProcessConfig,
     proc_info: &mut WatchNowProcInfo,
 ) {
+    let last_runs_updated = {
+        let mut last_runs_updated = proc_info.process_watched.as_ref().map_or_else(
+            || VecDeque::new(),
+            |pw| pw.last_runs.iter().cloned().collect::<VecDeque<_>>(),
+        );
+        last_runs_updated.push_back(chrono::Local::now().naive_local());
+        last_runs_updated
+    };
+
+    proc_info.process_watched.as_mut().map(|pw| {
+        pw.last_runs = last_runs_updated.clone();
+    });
+
     match runproc(
         &process_config.command,
         &process_config.work_dir,
@@ -83,15 +97,6 @@ fn run_process(
             let procman_uid = get_cmdline(pid);
             // TODO:2 Mejorar con un UUID único
             // let procman_uid = uuid::Uuid::new_v4().to_string();
-
-            let last_runs_updated = {
-                let mut last_runs_updated = proc_info.process_watched.as_ref().map_or_else(
-                    || VecDeque::new(),
-                    |pw| pw.last_runs.iter().cloned().collect::<VecDeque<_>>(),
-                );
-                last_runs_updated.push_back(chrono::Local::now().naive_local());
-                last_runs_updated
-            };
 
             match procman_uid {
                 Ok(procman_uid) => match pid_file {

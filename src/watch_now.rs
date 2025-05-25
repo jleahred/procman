@@ -9,6 +9,8 @@ mod move2stop_check_health;
 mod move2stop_modif_signature;
 mod move2stop_pid_missing_on_system;
 mod move2stopping_modif_applyon;
+mod move2too_much_runs;
+mod move4too_much_runs;
 mod not_actived_config;
 mod run_before_cmd;
 mod run_init_cmd;
@@ -32,6 +34,8 @@ pub(crate) fn watch_now(full_config_filename: &PathBuf) -> Result<(), String> {
         .cfg_actived_not_in_watched()?
         .stopped_with_active_cfg()?
         .check_waitting_pid_file()?
+        .move2too_much_runs()?
+        .move4too_much_runs()?
         .launch_process()?
         .not_actived_config()?
         .try_stop()?

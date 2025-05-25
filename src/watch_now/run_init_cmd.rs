@@ -82,8 +82,9 @@ impl super::WatchNow {
                     | ProcessStatus::Running { .. }
                     | ProcessStatus::WaittingPidFile { .. }
                     | ProcessStatus::Stopping { .. }
-                    | ProcessStatus::Stopped { .. } => {}
-                    ProcessStatus::StoppingWaittingPidFile { .. } => {}
+                    | ProcessStatus::Stopped { .. }
+                    | ProcessStatus::StoppingWaittingPidFile { .. }
+                    | ProcessStatus::TooMuchRuns => {}
                 },
                 _ => {}
             }

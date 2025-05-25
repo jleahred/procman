@@ -18,7 +18,8 @@ impl super::WatchNow {
                     | ProcessStatus::ShouldBeRunning
                     | ProcessStatus::PendingBeforeCmd
                     | ProcessStatus::WaittingPidFile { .. }
-                    | ProcessStatus::StoppingWaittingPidFile { .. } => {}
+                    | ProcessStatus::StoppingWaittingPidFile { .. }
+                    | ProcessStatus::TooMuchRuns => {}
                     //  ----
                     ProcessStatus::Stopping { health_check, .. } => {
                         if let Some(health_check) = health_check {
