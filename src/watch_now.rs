@@ -38,8 +38,8 @@ pub(crate) fn watch_now(full_config_filename: &PathBuf) -> Result<(), String> {
         .move4too_much_runs()?
         .launch_process()?
         .not_actived_config()?
-        .try_stop()?
         .move2stop_pid_missing_on_system()?
+        .try_stop()?
         .move2stop_check_health()?
         .move2stop_modif_signature()?
         .move2stopping_modif_applyon()?

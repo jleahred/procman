@@ -3,9 +3,7 @@
 
 ## TODO
 
-
-
-
+* En la línea de comando, reemplazar $$VAR$$ parámetros procman del servicio, y si no lo hay buscar en variables de entorno
 
 * log en sqlite, comando para consultar, añadir a tui
 * comandos (parada completa, desbloqueo proceso...)

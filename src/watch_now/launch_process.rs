@@ -98,7 +98,7 @@ fn run_process(
     ) {
         Ok((pid, pid_file)) => {
             let procman_uid = get_cmdline(pid);
-            // TODO:2 Mejorar con un UUID único
+            // TODO:2 Mejorar con un UUID único??
             // let procman_uid = uuid::Uuid::new_v4().to_string();
 
             match procman_uid {
@@ -359,8 +359,45 @@ fn get_real_pid_podman_detach(container_id: &str) -> std::io::Result<u32> {
     Ok(pid)
 }
 
+
 fn get_cmdline(pid: u32) -> std::io::Result<String> {
-    let raw =
-        String::from_utf8_lossy(&fs::read(format!("/proc/{}/cmdline", pid))?).replace('\0', " ");
-    Ok(raw)
+    use std::{fs, io, thread, time::Duration};
+
+    let comm_path = format!("/proc/{}/comm", pid);
+    let cmdline_path = format!("/proc/{}/cmdline", pid);
+
+    // Leer el nombre del ejecutable desde /comm
+    let executable = fs::read_to_string(&comm_path)?
+        .trim()
+        .to_string();
+
+    // Intentar leer cmdline hasta 3 veces
+    for _ in 0..3 {
+        let bytes = fs::read(&cmdline_path)?;
+
+        if !bytes.is_empty() {
+            let args = String::from_utf8_lossy(&bytes).replace('\0', " ");
+            if !args.trim().is_empty() {
+                // Anteponer el nombre del ejecutable
+                return Ok(format!("{} {}", executable, args.trim()));
+            }
+        }
+
+        thread::sleep(Duration::from_millis(100));
+    }
+
+    Err(io::Error::new(
+        io::ErrorKind::Other,
+        format!("Failed to read non-empty cmdline for PID {}", pid),
+    ))
 }
+
+
+// fn get_cmdline(pid: u32) -> std::io::Result<String> {
+//     let raw =
+//         String::from_utf8_lossy(&fs::read(format!("/proc/{}/cmdline", pid))?).replace('\0', " ");
+//     if raw.trim().is_empty() {
+//         panic!("Failed to get cmdline for PID: {}", pid);
+//     }
+//     Ok(raw)
+// }
