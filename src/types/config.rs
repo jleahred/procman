@@ -9,7 +9,6 @@ mod tests;
 
 #[derive(Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "kebab-case")]
 pub(crate) struct Config {
     pub(crate) uid: ConfigUid,
     #[serde(rename = "file-format")]
@@ -19,7 +18,6 @@ pub(crate) struct Config {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "kebab-case")]
 pub(crate) struct ProcessConfig {
     pub(crate) id: ProcessId,
     pub(crate) command: Command,
@@ -74,7 +72,6 @@ pub(crate) struct ConfigUid(pub(crate) String);
 
 #[derive(Deserialize, Serialize, PartialEq, Eq, Clone, Debug)]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "kebab-case")]
 #[serde(untagged)]
 pub(crate) enum Command {
     Simple(String),
@@ -83,7 +80,6 @@ pub(crate) enum Command {
 
 #[derive(Deserialize, Serialize, PartialEq, Eq, Clone, Debug)]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "kebab-case")]
 pub(crate) struct CommandDetail {
     line: String,
     #[serde(default, rename = "type")]
@@ -92,8 +88,7 @@ pub(crate) struct CommandDetail {
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
-// #[serde(rename_all = "lowercase")]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "lowercase")]
 pub(crate) enum CommandType {
     Simple,
     Expression,
@@ -121,7 +116,6 @@ impl Command {
 
 #[derive(Deserialize, Serialize, PartialEq, Eq, Clone, Debug)]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "kebab-case")]
 #[serde(untagged)]
 pub(crate) enum CommandInit {
     Simple(Command),
@@ -151,7 +145,6 @@ impl CommandInit {
 
 #[derive(Deserialize, Serialize, PartialEq, Eq, Clone, Debug)]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "kebab-case")]
 #[serde(untagged)]
 pub(crate) enum CommandBefore {
     Simple(Command),
@@ -181,7 +174,6 @@ impl CommandBefore {
 
 #[derive(Deserialize, Serialize, PartialEq, Eq, Clone, Debug)]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "kebab-case")]
 #[serde(untagged)]
 pub(crate) enum CheckHealth {
     Command(CommandCheckHealth),
@@ -190,7 +182,6 @@ pub(crate) enum CheckHealth {
 
 #[derive(Deserialize, Serialize, PartialEq, Eq, Clone, Debug)]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "kebab-case")]
 #[serde(untagged)]
 pub(crate) enum CommandCheckHealth {
     Simple(Command),
@@ -220,7 +211,6 @@ impl CommandCheckHealth {
 
 #[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Debug)]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "kebab-case")]
 pub(crate) struct FolderActivityCheckHealth {
     pub(crate) folder: std::path::PathBuf,
     #[serde(with = "humantime_serde")]
@@ -238,7 +228,6 @@ impl FolderActivityCheckHealth {
 
 #[derive(Deserialize, Serialize, PartialEq, Eq, Clone, Debug)]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "kebab-case")]
 #[serde(untagged)]
 pub(crate) enum CommandStop {
     Simple(Command),
@@ -269,7 +258,6 @@ impl CommandStop {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "kebab-case")]
 pub(crate) struct Schedule {
     #[serde(default)]
     pub(crate) week_days: DaySelection,

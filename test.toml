@@ -6,13 +6,13 @@ file-format = "0"
 
 [[process]]
 id = "A"
-apply-on = "2024-11-01T12:00:00"
+apply_on = "2024-11-01T12:00:00"
 
 command = "fake"
 
 # command = "sh -c \"echo 'hi' && sleep 2222\""
 # command = { line = "sleep 2222", type = "simple" }
-# work-dir = "/tmp"
+# work_dir = "/tmp"
 # type = "simple"
 # one-shot = true
 # schedule = { start_time = "01:00:00", stop_time = "23:59:00" }

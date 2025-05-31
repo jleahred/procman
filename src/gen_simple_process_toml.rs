@@ -16,21 +16,21 @@ file-format = "0"
 
 [[process]]
 id = "example_process"
-apply-on = "2025-05-12T21:00:00"
+apply_on = "2025-05-12T21:00:00"
 command = "sleep 5555"
 
 #optionals  -----------------------------------------
 fake = false
-depends-on = []
-work-dir = "/tmp"
+depends_on = []
+work_dir = "/tmp"
 before = "echo 'Preparing to start process...'"
 init = "echo 'Process is starting...'"
 stop = "echo 'Stopping process...'"
 
 [process.schedule]
-start-time = "00:00:00"
-stop-time = "23:59:00"
-week-days = ["mon", "wed", "thu", "sun"]
+start_time = "00:00:00"
+stop_time = "23:59:00"
+week_days = ["mon", "wed", "thu", "sun"]
 
 
 
@@ -39,7 +39,7 @@ week-days = ["mon", "wed", "thu", "sun"]
 
 [[process]]
 id = "example_process 2"
-apply-on = "2023-10-01T12:00:00"
+apply_on = "2023-10-01T12:00:00"
 command = "echo 'Hello, World!'"
 
 
