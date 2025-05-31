@@ -3,15 +3,14 @@
 
 ## TODO
 
-* En la línea de comando, reemplazar $$VAR$$ parámetros procman del servicio, y si no lo hay buscar en variables de entorno
 
 * log en sqlite, comando para consultar, añadir a tui
-* comandos (parada completa, desbloqueo proceso...)
 * limpieza 
     * stopped antiguos
     * /tmp/procman no actualizados hace más de varios días
 * muestra en rojo stopped para un proceso one-shot que está "bien" terminado, corregir
-* volver a añadir el uid en variable de entorno y verificar al buscar el pid
+* En la línea de comando, reemplazar $$VAR$$ parámetros procman del servicio, y si no lo hay buscar en variables de entorno
+* comandos (parada completa, desbloqueo proceso...)
 
 
 ¿alguna forma de desbloquear un proceso?

@@ -324,7 +324,7 @@ fn run_process_podman(
         .map(|pid| (pid, None))
 }
 
-use std::{fs, str};
+use std::str;
 
 use super::WatchNowProcInfo;
 
@@ -359,7 +359,6 @@ fn get_real_pid_podman_detach(container_id: &str) -> std::io::Result<u32> {
     Ok(pid)
 }
 
-
 fn get_cmdline(pid: u32) -> std::io::Result<String> {
     use std::{fs, io, thread, time::Duration};
 
@@ -367,9 +366,7 @@ fn get_cmdline(pid: u32) -> std::io::Result<String> {
     let cmdline_path = format!("/proc/{}/cmdline", pid);
 
     // Leer el nombre del ejecutable desde /comm
-    let executable = fs::read_to_string(&comm_path)?
-        .trim()
-        .to_string();
+    let executable = fs::read_to_string(&comm_path)?.trim().to_string();
 
     // Intentar leer cmdline hasta 3 veces
     for _ in 0..3 {
@@ -391,7 +388,6 @@ fn get_cmdline(pid: u32) -> std::io::Result<String> {
         format!("Failed to read non-empty cmdline for PID {}", pid),
     ))
 }
-
 
 // fn get_cmdline(pid: u32) -> std::io::Result<String> {
 //     let raw =
