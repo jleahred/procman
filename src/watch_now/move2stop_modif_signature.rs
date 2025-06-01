@@ -14,12 +14,10 @@ impl super::WatchNow {
                     | ProcessStatus::PendingBeforeCmd
                     | ProcessStatus::WaittingPidFile { .. }
                     | ProcessStatus::StoppingWaittingPidFile { .. }
-                    | ProcessStatus::TooMuchRuns => {}
+                    | ProcessStatus::TooMuchRuns
+                    | ProcessStatus::Stopping { .. } => {}
                     // ----
                     ProcessStatus::Running {
-                        pid, procman_uid, ..
-                    }
-                    | ProcessStatus::Stopping {
                         pid, procman_uid, ..
                     }
                     | ProcessStatus::PendingInitCmd {

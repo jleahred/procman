@@ -1,6 +1,7 @@
 mod cfg_actived_not_in_watched;
 mod check_waitting_pid_file;
 mod create;
+mod delete_old_stopped;
 mod filter_config_by_dependencies;
 mod filter_config_one_shot;
 mod get_running_status;
@@ -31,6 +32,7 @@ pub(crate) fn watch_now(full_config_filename: &PathBuf) -> Result<(), String> {
     WatchNow::create(&full_config_filename)?
         .filter_config_by_dependencies()?
         .filter_config_one_shot()?
+        .delete_old_stopped()?
         .cfg_actived_not_in_watched()?
         .stopped_with_active_cfg()?
         .check_waitting_pid_file()?

@@ -5,10 +5,11 @@ file-format = "0"
 
 
 [[process]]
+fake = true
 id = "A"
 apply_on = "2024-11-01T12:00:00"
 
-command = "fake"
+command = "sleep 2222"
 
 # command = "sh -c \"echo 'hi' && sleep 2222\""
 # command = { line = "sleep 2222", type = "simple" }
