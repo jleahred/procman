@@ -8,7 +8,7 @@ use std::collections::HashMap;
 mod tests;
 
 #[derive(Deserialize, Debug)]
-#[serde(deny_unknown_fields)]
+#[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub(crate) struct Config {
     pub(crate) uid: ConfigUid,
     #[serde(rename = "file-format")]
@@ -17,12 +17,13 @@ pub(crate) struct Config {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(deny_unknown_fields)]
+#[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub(crate) struct ProcessConfig {
     pub(crate) id: ProcessId,
     pub(crate) command: Command,
     pub(crate) apply_on: NaiveDateTime,
     pub(crate) work_dir: Option<std::path::PathBuf>,
+
     /// Command to execute when the process is running
     /// for the process to transition to the running state, the command must complete successfully
     /// it will only be attempted once
@@ -71,24 +72,41 @@ pub(crate) struct ProcessId(pub(crate) String);
 pub(crate) struct ConfigUid(pub(crate) String);
 
 #[derive(Deserialize, Serialize, PartialEq, Eq, Clone, Debug)]
-#[serde(deny_unknown_fields)]
-#[serde(untagged)]
+#[serde(deny_unknown_fields, untagged)]
 pub(crate) enum Command {
     Simple(String),
     Detailed(CommandDetail),
 }
 
+impl Command {
+    /// Returns a reference to the command line string
+    pub(crate) fn str(&self) -> &str {
+        match self {
+            Command::Simple(s) => s,
+            Command::Detailed(d) => &d.line,
+        }
+    }
+
+    /// Returns the command type
+    pub(crate) fn cmd_type(&self) -> &CommandType {
+        match self {
+            Command::Simple(_) => &CommandType::Simple,
+            Command::Detailed(d) => &d.cmd_type,
+        }
+    }
+}
+
 #[derive(Deserialize, Serialize, PartialEq, Eq, Clone, Debug)]
-#[serde(deny_unknown_fields)]
+#[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub(crate) struct CommandDetail {
     line: String,
     #[serde(default, rename = "type")]
     cmd_type: CommandType,
 }
 
+/// Command type selection for detailed commands
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
-#[serde(deny_unknown_fields)]
-#[serde(rename_all = "lowercase")]
+#[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub(crate) enum CommandType {
     Simple,
     Expression,
@@ -99,24 +117,10 @@ pub(crate) enum CommandType {
     PodmanCid,
 }
 
-impl Command {
-    pub(crate) fn str(&self) -> &str {
-        match self {
-            Command::Simple(command) => command,
-            Command::Detailed(CommandDetail { line, .. }) => line,
-        }
-    }
-    pub(crate) fn cmd_type(&self) -> &CommandType {
-        match self {
-            Command::Simple(_command) => &CommandType::Simple,
-            Command::Detailed(CommandDetail { cmd_type, .. }) => cmd_type,
-        }
-    }
-}
+// --- Command wrappers with optional timeout ---
 
 #[derive(Deserialize, Serialize, PartialEq, Eq, Clone, Debug)]
-#[serde(deny_unknown_fields)]
-#[serde(untagged)]
+#[serde(deny_unknown_fields, untagged)]
 pub(crate) enum CommandInit {
     Simple(Command),
     Detailed {
@@ -126,6 +130,7 @@ pub(crate) enum CommandInit {
         timeout: Option<std::time::Duration>,
     },
 }
+
 impl CommandInit {
     pub(crate) fn command(&self) -> &Command {
         match self {
@@ -144,8 +149,7 @@ impl CommandInit {
 }
 
 #[derive(Deserialize, Serialize, PartialEq, Eq, Clone, Debug)]
-#[serde(deny_unknown_fields)]
-#[serde(untagged)]
+#[serde(deny_unknown_fields, untagged)]
 pub(crate) enum CommandBefore {
     Simple(Command),
     Detailed {
@@ -155,6 +159,7 @@ pub(crate) enum CommandBefore {
         timeout: Option<std::time::Duration>,
     },
 }
+
 impl CommandBefore {
     pub(crate) fn command(&self) -> &Command {
         match self {
@@ -173,62 +178,7 @@ impl CommandBefore {
 }
 
 #[derive(Deserialize, Serialize, PartialEq, Eq, Clone, Debug)]
-#[serde(deny_unknown_fields)]
-#[serde(untagged)]
-pub(crate) enum CheckHealth {
-    Command(CommandCheckHealth),
-    FolderActivity(FolderActivityCheckHealth),
-}
-
-#[derive(Deserialize, Serialize, PartialEq, Eq, Clone, Debug)]
-#[serde(deny_unknown_fields)]
-#[serde(untagged)]
-pub(crate) enum CommandCheckHealth {
-    Simple(Command),
-    Detailed {
-        command: Command,
-        #[serde(with = "humantime_serde")]
-        #[serde(default)]
-        timeout: Option<std::time::Duration>,
-    },
-}
-impl CommandCheckHealth {
-    pub(crate) fn command(&self) -> &Command {
-        match self {
-            CommandCheckHealth::Simple(command) => command,
-            CommandCheckHealth::Detailed { command, .. } => command,
-        }
-    }
-    pub(crate) fn timeout(&self) -> std::time::Duration {
-        match self {
-            CommandCheckHealth::Simple(_) => std::time::Duration::from_secs(5),
-            CommandCheckHealth::Detailed { timeout, .. } => {
-                timeout.unwrap_or_else(|| std::time::Duration::from_secs(5))
-            }
-        }
-    }
-}
-
-#[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Debug)]
-#[serde(deny_unknown_fields)]
-pub(crate) struct FolderActivityCheckHealth {
-    pub(crate) folder: std::path::PathBuf,
-    #[serde(with = "humantime_serde")]
-    #[serde(default)]
-    inactive_time: Option<std::time::Duration>,
-}
-impl FolderActivityCheckHealth {
-    pub(crate) fn inactive_time(&self) -> std::time::Duration {
-        match self.inactive_time {
-            Some(inactive_time) => inactive_time,
-            None => std::time::Duration::from_secs(300),
-        }
-    }
-}
-
-#[derive(Deserialize, Serialize, PartialEq, Eq, Clone, Debug)]
-#[serde(deny_unknown_fields)]
-#[serde(untagged)]
+#[serde(deny_unknown_fields, untagged)]
 pub(crate) enum CommandStop {
     Simple(Command),
     Detailed {
@@ -256,12 +206,67 @@ impl CommandStop {
     }
 }
 
+// --- Health check commands ---
+
+#[derive(Deserialize, Serialize, PartialEq, Eq, Clone, Debug)]
+#[serde(deny_unknown_fields, untagged)]
+pub(crate) enum CheckHealth {
+    Command(CommandCheckHealth),
+    FolderActivity(FolderActivityCheckHealth),
+}
+
+#[derive(Deserialize, Serialize, PartialEq, Eq, Clone, Debug)]
+#[serde(deny_unknown_fields, untagged)]
+pub(crate) enum CommandCheckHealth {
+    Simple(Command),
+    Detailed {
+        command: Command,
+        #[serde(with = "humantime_serde")]
+        #[serde(default)]
+        timeout: Option<std::time::Duration>,
+    },
+}
+
+impl CommandCheckHealth {
+    pub(crate) fn command(&self) -> &Command {
+        match self {
+            CommandCheckHealth::Simple(command) => command,
+            CommandCheckHealth::Detailed { command, .. } => command,
+        }
+    }
+    pub(crate) fn timeout(&self) -> std::time::Duration {
+        match self {
+            CommandCheckHealth::Simple(_) => std::time::Duration::from_secs(5),
+            CommandCheckHealth::Detailed { timeout, .. } => {
+                timeout.unwrap_or_else(|| std::time::Duration::from_secs(5))
+            }
+        }
+    }
+}
+
+#[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Debug)]
+#[serde(deny_unknown_fields, rename_all = "kebab-case")]
+pub(crate) struct FolderActivityCheckHealth {
+    pub(crate) folder: std::path::PathBuf,
+    #[serde(with = "humantime_serde")]
+    #[serde(default)]
+    inactive_time: Option<std::time::Duration>,
+}
+
+impl FolderActivityCheckHealth {
+    pub(crate) fn inactive_time(&self) -> std::time::Duration {
+        match self.inactive_time {
+            Some(inactive_time) => inactive_time,
+            None => std::time::Duration::from_secs(300),
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(deny_unknown_fields)]
+#[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub(crate) struct Schedule {
     #[serde(default)]
     pub(crate) week_days: DaySelection,
-
     pub(crate) start_time: NaiveTime,
     pub(crate) stop_time: NaiveTime,
 }
@@ -293,9 +298,8 @@ impl ProcessConfig {
     }
 }
 
-//  ----------------
-
 #[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "kebab-case")]
 pub(crate) enum DaySelection {
     Days(Vec<chrono::Weekday>),
     #[serde(rename = "mon-fri")]
