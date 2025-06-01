@@ -4,17 +4,13 @@
 ## TODO
 
 
-* En la línea de comando, reemplazar $$VAR$$ parámetros procman del servicio, y si no lo hay buscar en variables de entorno
 * muestra en rojo stopped para un proceso one-shot que está "bien" terminado, corregir
 * log en sqlite, comando para consultar, añadir a tui
 
 
-* comandos (parada completa, desbloqueo proceso...)
-¿alguna forma de desbloquear un proceso?
-Por ejemplo, un waitting pid file?
-quizá desde el tui
 
 
+* En la línea de comando, reemplazar {{ VAR }} parámetros procman del servicio, y si no lo hay buscar en variables de entorno
 * tui mostrar la úlitma actualización de procesos, si es muy antigua, en rojo
 * delete old files, delete old stopped
 * hay que borrar los procesos que tengan running_status pero no estén en config
@@ -31,6 +27,10 @@ quizá desde el tui
     * commands
         * stop
         * ...
+* comandos (parada completa, desbloqueo proceso...)
+¿alguna forma de desbloquear un proceso?
+Por ejemplo, un waitting pid file?
+quizá desde el tui
 
 
 
