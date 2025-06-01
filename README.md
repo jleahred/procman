@@ -4,10 +4,8 @@
 ## TODO
 
 
-* volver a poner kebab-case en config
-    * quitar jinja y hacerlo a mano
-* muestra en rojo stopped para un proceso one-shot que está "bien" terminado, corregir
 * En la línea de comando, reemplazar $$VAR$$ parámetros procman del servicio, y si no lo hay buscar en variables de entorno
+* muestra en rojo stopped para un proceso one-shot que está "bien" terminado, corregir
 * log en sqlite, comando para consultar, añadir a tui
 
 

@@ -2,6 +2,7 @@ mod check_run_once;
 mod cli_params;
 mod gen_simple_process_toml;
 mod remove_old_status;
+mod sup;
 mod tui;
 mod types;
 mod watch_now;
