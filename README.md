@@ -99,8 +99,12 @@ Once restarted, it should continue monitoring and managing.
 
 ## Modifs
 
-* 0.1.5  Removed kebab-case
-
+| Version | Changes                         |
+| ------- | ------------------------------- |
+| 0.1.6   | Removed minijinja               |
+|         | Added back kebab-case on config |
+| 0.1.5   | Removed kebab-case              |
+         
 
 ## Commands
 
