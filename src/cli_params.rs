@@ -32,6 +32,9 @@ pub(crate) enum Commands {
     },
     /// Generate a monitor process file with minimum example with the given filename
     GenFile { filename: Option<PathBuf> },
+    /// Delete old status files
+    /// If exists a status file not updated in long time, it will be deleted
+    DeleteOldStatusFiles,
 }
 
 pub(crate) fn parse() -> Cli {

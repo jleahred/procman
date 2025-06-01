@@ -1,6 +1,7 @@
 mod check_run_once;
 mod cli_params;
 mod gen_simple_process_toml;
+mod remove_old_status;
 mod tui;
 mod types;
 mod watch_now;
@@ -71,6 +72,7 @@ fn main() {
             return;
         }
         cli_params::Commands::Tui => {
+            remove_old_status::rename_old_status();
             tui::run().unwrap();
         }
         cli_params::Commands::ExpandTemplates { processes_filename } => {
@@ -94,6 +96,10 @@ fn main() {
                 std::process::exit(1);
             }
             println!("Generated simple process file successfully.");
+        }
+        cli_params::Commands::DeleteOldStatusFiles => {
+            remove_old_status::rename_old_status();
+            println!("Old status files deleted if any.");
         }
     }
 }
