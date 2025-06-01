@@ -192,8 +192,12 @@ fn run_process_pid_file(
 
     let child: Child = cmd
         .arg("-c")
-        .arg(&command.str().replace("$$PROCMAN_PID_FILE$$", file.as_str()))
-        // .env("PROCMAN_PID_FILE", "proc_uuid")
+        .arg(
+            &command
+                .str()
+                .replace("{{ PROCMAN_PID_FILE }}", file.as_str()),
+        )
+        .env("PROCMAN_PID_FILE", "proc_uuid")
         .spawn()?;
 
     // let start_time = std::time::Instant::now();

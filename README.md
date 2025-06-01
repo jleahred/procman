@@ -598,13 +598,13 @@ To avoid duplicate starts due to concurrency issues, in `init` it's advisable to
 There is the possibility of using a `shell` expression where we can inform `procman` of the target pid to monitor/manage
 
 ```toml
-command = { line = "echo hi &&  echo $$PROCMAN_PID_FILE$$  &&  sleep 2  && (sleep 333 &  echo  $! > $$PROCMAN_PID_FILE$$)", type = "pid-file" }
+command = { line = "echo hi &&  echo {{ PROCMAN_PID_FILE }}  &&  sleep 2  && (sleep 333 &  echo  $! > {{ PROCMAN_PID_FILE }})", type = "pid-file" }
 ```
 
 It can also be used as an environment variable
 
 ```toml
-command = { line = "echo hi &&  echo $$PROCMAN_PID_FILE$$  &&  sleep 2  && (sleep 333 &  echo  $! > $PROCMAN_PID_FILE)", type = "pid-file" }
+command = { line = "echo hi &&  echo {{ PROCMAN_PID_FILE }}  &&  sleep 2  && (sleep 333 &  echo  $! > {{ PROCMAN_PID_FILE }})", type = "pid-file" }
 ```
 
 Currently, if a command is configured with pid-file and this file is not generated, this process/service will be indefinitely blocked and will require manual intervention for correction
